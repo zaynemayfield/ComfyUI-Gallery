@@ -115,6 +115,9 @@ function ImageCard({
     };
     const fileSizeText = currentImage.metadata?.fileinfo?.size;
     const durationText = currentImage.type === 'media' ? formatDuration(videoDuration) : undefined;
+    const detailsText = currentImage.type === 'media'
+        ? [fileSizeText, durationText].filter(Boolean).join(' - ')
+        : fileSizeText;
 
     useEffect(() => {
         setCompactIndex(0);
@@ -487,7 +490,7 @@ function ImageCard({
                         }}
                         ellipsis
                     >
-                        {[fileSizeText, durationText].filter(Boolean).join('  |  ') || '\u00A0'}
+                        {detailsText || '\u00A0'}
                     </Typography.Text>
                 </div>
                 <Button

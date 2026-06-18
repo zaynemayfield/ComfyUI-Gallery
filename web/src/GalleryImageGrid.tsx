@@ -1,6 +1,11 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Empty, Image, Spin } from 'antd';
+import { Button, Empty, Image, Slider, Spin } from 'antd';
+import FullscreenOutlined from '@ant-design/icons/lib/icons/FullscreenOutlined';
+import MutedOutlined from '@ant-design/icons/lib/icons/MutedOutlined';
+import PauseOutlined from '@ant-design/icons/lib/icons/PauseOutlined';
+import PlayCircleOutlined from '@ant-design/icons/lib/icons/PlayCircleOutlined';
 import RetweetOutlined from '@ant-design/icons/lib/icons/RetweetOutlined';
+import SoundOutlined from '@ant-design/icons/lib/icons/SoundOutlined';
 import { AutoSizer } from 'react-virtualized';
 import { VariableSizeGrid } from 'react-window';
 import ImageCard, { ImageCardHeight, ImageCardWidth } from './ImageCard';
@@ -117,6 +122,7 @@ const takeMediaBatch = (items: FileDetails[], limit: number) => {
 
 const DATE_DIVIDER_ROW_HEIGHT = 26;
 const PREVIEW_VOLUME_KEY = 'comfy-ui-gallery-preview-volume';
+const PREVIEW_MUTED_KEY = 'comfy-ui-gallery-preview-muted';
 const PREVIEW_LOOP_KEY = 'comfy-ui-gallery-preview-loop';
 
 const getStoredPreviewVolume = () => {
@@ -126,77 +132,159 @@ const getStoredPreviewVolume = () => {
 };
 
 const getStoredPreviewLoop = () => localStorage.getItem(PREVIEW_LOOP_KEY) === 'true';
+const getStoredPreviewMuted = () => localStorage.getItem(PREVIEW_MUTED_KEY) === 'true';
 
 const PreviewVideo = ({ image }: { image: FileDetails }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [volume, setVolume] = useState(getStoredPreviewVolume);
+    const [muted, setMuted] = useState(getStoredPreviewMuted);
     const [loop, setLoop] = useState(getStoredPreviewLoop);
+    const [playing, setPlaying] = useState(true);
 
     useEffect(() => {
         if (!videoRef.current) return;
         videoRef.current.volume = volume;
-    }, [volume, image.url]);
+        videoRef.current.muted = muted;
+    }, [volume, muted, image.url]);
 
     useEffect(() => {
         localStorage.setItem(PREVIEW_LOOP_KEY, String(loop));
     }, [loop]);
 
+    const togglePlayback = () => {
+        const video = videoRef.current;
+        if (!video) return;
+        if (video.paused) {
+            video.play().catch(() => undefined);
+        } else {
+            video.pause();
+        }
+    };
+
+    const setMutedPreference = (nextMuted: boolean) => {
+        setMuted(nextMuted);
+        localStorage.setItem(PREVIEW_MUTED_KEY, String(nextMuted));
+        if (videoRef.current) videoRef.current.muted = nextMuted;
+    };
+
+    const setVolumePreference = (nextVolume: number) => {
+        const normalized = Math.max(0, Math.min(1, nextVolume));
+        setVolume(normalized);
+        localStorage.setItem(PREVIEW_VOLUME_KEY, String(normalized));
+        if (videoRef.current) {
+            videoRef.current.volume = normalized;
+            if (normalized > 0 && videoRef.current.muted) {
+                setMutedPreference(false);
+            }
+        }
+    };
+
     return (
         <div
+            ref={containerRef}
             style={{
-                position: 'relative',
                 maxWidth: '92vw',
                 maxHeight: '86vh',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: 8,
             }}
         >
             <video
                 ref={videoRef}
                 key={image.name}
-                style={{ maxWidth: '92vw', maxHeight: '86vh', width: 'auto', height: 'auto' }}
+                style={{ maxWidth: '92vw', maxHeight: 'calc(86vh - 44px)', width: 'auto', height: 'auto', cursor: 'pointer' }}
                 src={`${BASE_PATH}${image.url}`}
                 autoPlay
-                controls
+                controls={false}
                 loop={loop}
+                muted={muted}
                 preload="metadata"
                 onLoadedMetadata={(event) => {
                     event.currentTarget.volume = volume;
+                    event.currentTarget.muted = muted;
                 }}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
                 onVolumeChange={(event) => {
                     const nextVolume = event.currentTarget.volume;
+                    const nextMuted = event.currentTarget.muted;
                     setVolume(nextVolume);
+                    setMuted(nextMuted);
                     localStorage.setItem(PREVIEW_VOLUME_KEY, String(nextVolume));
+                    localStorage.setItem(PREVIEW_MUTED_KEY, String(nextMuted));
                 }}
                 onClick={(event) => {
                     event.stopPropagation();
-                    const video = event.currentTarget;
-                    if (video.paused) {
-                        video.play().catch(() => undefined);
-                    } else {
-                        video.pause();
-                    }
+                    togglePlayback();
                 }}
             />
-            <Button
-                size="small"
-                type={loop ? 'primary' : 'default'}
-                icon={<RetweetOutlined />}
-                onClick={(event) => {
-                    event.stopPropagation();
-                    setLoop(value => !value);
-                }}
+            <div
+                onClick={(event) => event.stopPropagation()}
                 style={{
-                    position: 'absolute',
-                    right: 10,
-                    bottom: 44,
-                    zIndex: 2,
-                    opacity: 0.9,
+                    height: 36,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(0, 0, 0, 0.68)',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
+                    color: '#fff',
                 }}
             >
-                Loop
-            </Button>
+                <Button
+                    size="small"
+                    type="text"
+                    icon={playing ? <PauseOutlined /> : <PlayCircleOutlined />}
+                    onClick={togglePlayback}
+                    style={{ color: '#fff' }}
+                    aria-label={playing ? 'Pause video' : 'Play video'}
+                />
+                <Button
+                    size="small"
+                    type="text"
+                    icon={muted || volume === 0 ? <MutedOutlined /> : <SoundOutlined />}
+                    onClick={() => setMutedPreference(!muted)}
+                    style={{ color: '#fff' }}
+                    aria-label={muted ? 'Unmute video' : 'Mute video'}
+                />
+                <Slider
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={muted ? 0 : volume}
+                    onChange={value => setVolumePreference(value)}
+                    style={{ width: 96, margin: 0 }}
+                    tooltip={{ formatter: null }}
+                />
+                <Button
+                    size="small"
+                    type={loop ? 'primary' : 'text'}
+                    icon={<RetweetOutlined />}
+                    onClick={() => setLoop(value => !value)}
+                    style={{ color: loop ? undefined : '#fff' }}
+                    aria-label={loop ? 'Disable loop' : 'Enable loop'}
+                />
+                <Button
+                    size="small"
+                    type="text"
+                    icon={<FullscreenOutlined />}
+                    onClick={() => {
+                        const target = containerRef.current;
+                        if (target && document.fullscreenElement !== target) {
+                            target.requestFullscreen?.();
+                        } else {
+                            document.exitFullscreen?.();
+                        }
+                    }}
+                    style={{ color: '#fff' }}
+                    aria-label="Toggle fullscreen"
+                />
+            </div>
         </div>
     );
 };

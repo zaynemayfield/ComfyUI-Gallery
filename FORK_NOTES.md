@@ -17,6 +17,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added a Compact display mode that groups related outputs with matching stems, preferring `-audio` variants as the visible card.
 - Added a Compact tooltip, media-type badges, and in-card chevrons for cycling through grouped outputs.
 - Added fixed-footprint preview-card metadata lines for file size and video duration.
+- Formatted video card metadata as `size - duration` when both values are available.
 - Replaced the default modal close icon with a red Close button in the header row.
 - Replaced the left header toggle with a compact icon that shows or hides the horizontal folder navigation.
 - Restyled horizontal folder navigation into one icon-led row using separators instead of section labels.
@@ -30,6 +31,8 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added a non-blocking compact-count badge to grouped preview cards.
 - Updated media preview overlays so videos scale within the viewport instead of overflowing the screen.
 - Added persistent preview video volume, click-to-pause behavior, and a loop toggle in the preview overlay.
+- Persisted preview video mute state so the next preview starts muted when the user muted the previous one.
+- Replaced native preview video controls with a custom row for reliable click-to-pause, mute, volume, loop, and fullscreen controls.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.
