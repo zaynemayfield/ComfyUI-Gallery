@@ -41,6 +41,7 @@ const isMediaItem = (item: FileDetails) => (
 
 type CompactFileDetails = FileDetails & {
     compactCount?: number;
+    compactItems?: FileDetails[];
 };
 
 type DateDividerRow = {
@@ -83,11 +84,21 @@ const compactRelatedOutputs = (items: FileDetails[]): CompactFileDetails[] => {
             ?? group.find(item => item.type === 'image')
             ?? group[0];
 
+        const orderedGroup = [
+            representative,
+            ...group.filter(item => item.url !== representative.url),
+        ];
+
         return {
             ...representative,
             compactCount: group.length,
+            compactItems: orderedGroup,
         };
     });
+};
+
+const getPreviewItems = (items: FileDetails[]) => {
+    return items.flatMap(item => (item as CompactFileDetails).compactItems ?? [item]);
 };
 
 const takeMediaBatch = (items: FileDetails[], limit: number) => {
@@ -235,7 +246,7 @@ const GalleryImageGrid = () => {
     }, [getRowHeight]);
 
     const imagesUrlsLists = useMemo(() =>
-        visibleImagesDetailsList.filter(isMediaItem).map(image => `${BASE_PATH}${image.url}`),
+        getPreviewItems(visibleImagesDetailsList).filter(isMediaItem).map(image => `${BASE_PATH}${image.url}`),
         [visibleImagesDetailsList]
     );
 
@@ -282,19 +293,18 @@ const GalleryImageGrid = () => {
         setPendingScrollTarget(target);
     }, [mediaBatchSize]);
 
-    const handleInfoClick = useCallback((imageName: string) => {
+    const handleInfoClick = useCallback((image: FileDetails) => {
         // Set the info modal target
 
         // If the item is media/audio/3d, set previewing state so the preview group uses media renderer
-        const item = visibleImagesDetailsList.find(image => image.name === imageName);
-        if (item && (item.type === 'media' || item.type === 'audio' || item.type === '3d')) {
-            setPreviewingVideo(item.name);
+        if (image.type === 'media' || image.type === 'audio' || image.type === '3d') {
+            setPreviewingVideo(image.name);
         } else {
             setPreviewingVideo(undefined);
         }
 
-        setImageInfoName(imageName);
-    }, [setImageInfoName, visibleImagesDetailsList, setPreviewingVideo]);
+        setImageInfoName(image.name);
+    }, [setImageInfoName, setPreviewingVideo]);
 
     const Cell = useCallback(({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
         const index = rowIndex * previewLayout.columnCount + columnIndex;
@@ -437,7 +447,8 @@ const GalleryImageGrid = () => {
                     index={index}
                     cardWidth={previewLayout.cardWidth}
                     cardHeight={previewLayout.cardHeight}
-                    onInfoClick={() => handleInfoClick(image.name)} onVideoClick={() => setPreviewingVideo(image.name)}
+                    onInfoClick={handleInfoClick}
+                    onVideoClick={(selectedImage) => setPreviewingVideo(selectedImage?.name)}
                 />
             </div>
         );
@@ -452,7 +463,7 @@ const GalleryImageGrid = () => {
 
     // Memoized previewable images for InfoView navigation and rendering
     const previewableImages = useMemo(() =>
-        visibleImagesDetailsList.filter(isMediaItem),
+        getPreviewItems(visibleImagesDetailsList).filter(isMediaItem),
         [visibleImagesDetailsList]
     );
 
@@ -526,7 +537,7 @@ const GalleryImageGrid = () => {
                         </h2>
                         <audio
                             key={image.name}
-                            style={{ maxWidth: "-webkit-fill-available", width: "80%" }}
+                            style={{ maxWidth: '92vw', width: '80%' }}
                             src={`${BASE_PATH}${image.url}`}
                             autoPlay={true}
                             controls={true}
@@ -555,7 +566,7 @@ const GalleryImageGrid = () => {
                 return (
                     <video
                         key={image.name}
-                        style={{ maxWidth: "-webkit-fill-available", width: "80%" }}
+                        style={{ maxWidth: '92vw', maxHeight: '86vh', width: 'auto', height: 'auto' }}
                         src={`${BASE_PATH}${image.url}`}
                         autoPlay={true}
                         controls={true}

@@ -174,13 +174,15 @@ const GalleryHeader = () => {
                         value={mediaBatchSize}
                         onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
                     />
-                    <Button
-                        size="middle"
-                        type={compactOutputs ? 'primary' : 'default'}
-                        onClick={() => setCompactOutputs(prev => !prev)}
-                    >
-                        Compact
-                    </Button>
+                    <Tooltip title="Group related outputs with the same filename, including -audio variants, into one browsable card." placement="bottom">
+                        <Button
+                            size="middle"
+                            type={compactOutputs ? 'primary' : 'default'}
+                            onClick={() => setCompactOutputs(prev => !prev)}
+                        >
+                            Compact
+                        </Button>
+                    </Tooltip>
                     <Segmented
                         options={[
                             { label: 'Autoplay Off', value: false },

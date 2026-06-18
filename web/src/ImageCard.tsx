@@ -1,7 +1,11 @@
 import { Button, Image, Typography } from 'antd';
 import type { FileDetails } from './types';
 import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
+import LeftOutlined from '@ant-design/icons/lib/icons/LeftOutlined';
+import PictureOutlined from '@ant-design/icons/lib/icons/PictureOutlined';
+import RightOutlined from '@ant-design/icons/lib/icons/RightOutlined';
 import SoundOutlined from '@ant-design/icons/lib/icons/SoundOutlined';
+import VideoCameraOutlined from '@ant-design/icons/lib/icons/VideoCameraOutlined';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDrag } from 'ahooks';
 import { useGalleryContext } from './GalleryContext';
@@ -82,10 +86,10 @@ function ImageCard({
     cardWidth = ImageCardWidth,
     cardHeight = ImageCardHeight,
 }: {
-    image: FileDetails & { dragFolder?: string; compactCount?: number };
+    image: FileDetails & { dragFolder?: string; compactCount?: number; compactItems?: FileDetails[] };
     index: number;
-    onInfoClick: (imageName: string | undefined) => void;
-    onVideoClick: (imageName: string | undefined) => void;
+    onInfoClick: (image: FileDetails) => void;
+    onVideoClick: (image: FileDetails | undefined) => void;
     cardWidth?: number;
     cardHeight?: number;
 }) {
@@ -94,18 +98,25 @@ function ImageCard({
     const videoRef = useRef<HTMLVideoElement>(null);
     const [dragging, setDragging] = useState(false);
     const [videoInView, setVideoInView] = useState(false);
-    const mediaBorderColor = image.type === 'media'
+    const compactItems = image.compactItems?.length ? image.compactItems : [image];
+    const [compactIndex, setCompactIndex] = useState(0);
+    const currentImage = compactItems[Math.min(compactIndex, compactItems.length - 1)] ?? image;
+    const mediaBorderColor = currentImage.type === 'media'
         ? 'rgba(250, 173, 20, 0.65)'
-        : image.type === 'image'
+        : currentImage.type === 'image'
             ? 'rgba(105, 177, 255, 0.55)'
             : 'rgba(127, 127, 127, 0.38)';
 
+    useEffect(() => {
+        setCompactIndex(0);
+    }, [image.url, image.compactCount]);
+
     useDrag(
         {
-            name: image.name,
+            name: currentImage.name,
             folder: image.dragFolder || '',
-            type: image.type,
-            url: image.url,
+            type: currentImage.type,
+            url: currentImage.url,
         },
         dragRef,
         {
@@ -115,7 +126,7 @@ function ImageCard({
     );
 
     useEffect(() => {
-        if (image.type !== 'media' || !dragRef.current) return;
+        if (currentImage.type !== 'media' || !dragRef.current) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => setVideoInView(entry.isIntersecting),
@@ -124,10 +135,10 @@ function ImageCard({
         observer.observe(dragRef.current);
 
         return () => observer.disconnect();
-    }, [image.type]);
+    }, [currentImage.type]);
 
     useEffect(() => {
-        if (image.type !== 'media' || !videoRef.current) return;
+        if (currentImage.type !== 'media' || !videoRef.current) return;
 
         const video = videoRef.current;
         if (settings.autoPlayVideos && videoInView) {
@@ -135,7 +146,7 @@ function ImageCard({
         } else {
             video.pause();
         }
-    }, [image.type, settings.autoPlayVideos, videoInView]);
+    }, [currentImage.type, settings.autoPlayVideos, videoInView, currentImage.url]);
 
     // Use ctrlKey from click event, not global state
     const handleCardClick = (event: React.MouseEvent) => {
@@ -145,10 +156,10 @@ function ImageCard({
             event.preventDefault();
 
             setSelectedImages((oldSelectedImages) => {
-                if (oldSelectedImages.includes(image.url)) {
-                    return [...oldSelectedImages.filter((selectedImage) => selectedImage != image.url)];
+                if (oldSelectedImages.includes(currentImage.url)) {
+                    return [...oldSelectedImages.filter((selectedImage) => selectedImage != currentImage.url)];
                 } else {
-                    return [...oldSelectedImages, image.url];
+                    return [...oldSelectedImages, currentImage.url];
                 }
             });
         } else {
@@ -172,12 +183,12 @@ function ImageCard({
             return map[ext] || '';
         };
 
-        const guessed = guessMimeFromName(image.name || image.url);
+        const guessed = guessMimeFromName(currentImage.name || currentImage.url);
         // Fallback to previous simple heuristic if we couldn't guess from extension
-        const mimeType = guessed || (image.type === 'image' ? 'image/png' : image.type === 'audio' ? 'audio/wav' : 'video/mp4');
+        const mimeType = guessed || (currentImage.type === 'image' ? 'image/png' : currentImage.type === 'audio' ? 'audio/wav' : 'video/mp4');
 
-        event.dataTransfer.setData('text/uri-list', `${BASE_PATH}${image.url}`);
-        event.dataTransfer.setData('DownloadURL', `${mimeType}:${image.name}:${window.location.origin + BASE_PATH + image.url}`);
+        event.dataTransfer.setData('text/uri-list', `${BASE_PATH}${currentImage.url}`);
+        event.dataTransfer.setData('DownloadURL', `${mimeType}:${currentImage.name}:${window.location.origin + BASE_PATH + currentImage.url}`);
         // Optionally, set a drag image
         // event.dataTransfer.setDragImage(event.currentTarget, 10, 10);
     };
@@ -201,10 +212,35 @@ function ImageCard({
                 alignItems: "center",
                 position: "relative",
                 cursor: 'grab',
-                boxShadow: selectedImages.includes(image.url) ? '0 0 0 3px #1890ff' : undefined,
+                boxShadow: selectedImages.includes(currentImage.url) ? '0 0 0 3px #1890ff' : undefined,
             }}
             onClick={handleCardClick}
         >
+            <div
+                title={currentImage.type === 'media' ? 'Video' : currentImage.type === 'image' ? 'Image' : currentImage.type}
+                style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 3,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    borderRadius: 4,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    border: '1px solid rgba(255, 255, 255, 0.34)',
+                    color: '#fff',
+                    pointerEvents: 'none',
+                }}
+            >
+                {currentImage.type === 'media'
+                    ? <VideoCameraOutlined />
+                    : currentImage.type === 'image'
+                        ? <PictureOutlined />
+                        : <SoundOutlined />}
+            </div>
             {image.compactCount && image.compactCount > 1 && (
                 <div
                     title={`${image.compactCount} related outputs compacted`}
@@ -264,9 +300,53 @@ function ImageCard({
                     {image.compactCount}
                 </div>
             )}
-            {image.type == "image" ? (<>
+            {compactItems.length > 1 && (
+                <>
+                    <Button
+                        size="small"
+                        shape="circle"
+                        icon={<LeftOutlined />}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setCompactIndex(current => (current - 1 + compactItems.length) % compactItems.length);
+                        }}
+                        style={{
+                            position: 'absolute',
+                            left: 8,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 4,
+                            background: 'rgba(0, 0, 0, 0.5)',
+                            color: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.36)',
+                        }}
+                        aria-label="Previous compacted media"
+                    />
+                    <Button
+                        size="small"
+                        shape="circle"
+                        icon={<RightOutlined />}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setCompactIndex(current => (current + 1) % compactItems.length);
+                        }}
+                        style={{
+                            position: 'absolute',
+                            right: 8,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 4,
+                            background: 'rgba(0, 0, 0, 0.5)',
+                            color: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.36)',
+                        }}
+                        aria-label="Next compacted media"
+                    />
+                </>
+            )}
+            {currentImage.type == "image" ? (<>
                 <Image
-                    id={image.url}
+                    id={currentImage.url}
                     style={{
                         objectFit: "cover",
                         ...(settings.imageThumbFit === 'height'
@@ -275,47 +355,48 @@ function ImageCard({
                         userSelect: 'none',
                         cursor: 'grab',
                     }}
-                    src={`${BASE_PATH}${image.url}`}
+                    src={`${BASE_PATH}${currentImage.url}`}
                     loading="lazy"
                     // preview={false}
                     onClick={() => {
                         // Ensure any leftover media preview state is cleared so this opens as an image
                         try { setPreviewingVideo(undefined); } catch { }
                         // Trigger the preview
-                        document.getElementById(image.url)?.click();
+                        document.getElementById(currentImage.url)?.click();
                     }}
-                    alt={image.name}
+                    alt={currentImage.name}
                     draggable
                     onDragStart={handleNativeDragStart}
                 />
-            </>) : image.type === "audio" ? (<>
+            </>) : currentImage.type === "audio" ? (<>
                 <div
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}
                     onClick={() => {
                         try { setPreviewingVideo(undefined); } catch { }
-                        document.getElementById(image.url)?.click();
+                        document.getElementById(currentImage.url)?.click();
                     }}
                 >
                     <SoundOutlined style={{ fontSize: '64px', color: '#1890ff', marginBottom: '24px' }} />
                     <Typography.Text style={{ marginBottom: '16px', padding: '0 16px', textAlign: 'center', maxWidth: '100%' }} ellipsis>
-                        {image.name}
+                        {currentImage.name}
                     </Typography.Text>
-                    <audio controls style={{ width: '90%', height: '40px' }} src={`${BASE_PATH}${image.url}`} onClick={(e) => e.stopPropagation()} />
+                    <audio controls style={{ width: '90%', height: '40px' }} src={`${BASE_PATH}${currentImage.url}`} onClick={(e) => e.stopPropagation()} />
                     <Image
-                        id={image.url}
+                        id={currentImage.url}
                         style={{ display: 'none' }}
-                        src={`${BASE_PATH}${image.url}`}
+                        src={`${BASE_PATH}${currentImage.url}`}
                         loading="lazy"
-                        alt={image.name}
+                        alt={currentImage.name}
                     />
                 </div>
-            </>) : image.type === "3d" ? (
-                <ImageCard3DThumbnail image={image as any} cardWidth={cardWidth} onClick={() => {
+            </>) : currentImage.type === "3d" ? (
+                <ImageCard3DThumbnail image={currentImage as any} cardWidth={cardWidth} onClick={() => {
                     try { setPreviewingVideo(undefined); } catch { }
-                    document.getElementById(image.url)?.click();
+                    document.getElementById(currentImage.url)?.click();
                 }} />
             ) : <>
                 <video
+                    key={currentImage.url}
                     ref={videoRef}
                     style={{
                         ...(settings.videoThumbFit === 'height'
@@ -323,27 +404,27 @@ function ImageCard({
                             : { maxWidth: cardWidth }),
                         cursor: "pointer"
                     }}
-                    src={`${BASE_PATH}${image.url}`}
+                    src={`${BASE_PATH}${currentImage.url}`}
                     autoPlay={false}
                     loop={settings.autoPlayVideos}
                     muted={true}
                     preload="metadata"
                     onClick={() => {
-                        onVideoClick(image.name);
-                        document.getElementById(image.url)?.click();
+                        onVideoClick(currentImage);
+                        document.getElementById(currentImage.url)?.click();
                     }}
                     draggable
                     onDragStart={handleNativeDragStart}
                 />
                 <Image
-                    id={image.url}
+                    id={currentImage.url}
                     style={{
                         display: "none"
                     }}
-                    src={`${BASE_PATH}${image.url}`}
+                    src={`${BASE_PATH}${currentImage.url}`}
                     loading="lazy"
                     // preview={false}
-                    alt={image.name}
+                    alt={currentImage.name}
                 />
             </>}
             <div
@@ -369,7 +450,7 @@ function ImageCard({
 
                     }}
                 >
-                    {image.name}
+                    {currentImage.name}
                 </Typography.Text>
                 <Button
                     color="cyan"
@@ -377,8 +458,8 @@ function ImageCard({
                     icon={<InfoCircleOutlined />}
                     size={"middle"}
                     onClick={() => {
-                        onInfoClick(image.name);
-                        document.getElementById(image.url)?.click();
+                        onInfoClick(currentImage);
+                        document.getElementById(currentImage.url)?.click();
                     }}
                 />
             </div>
