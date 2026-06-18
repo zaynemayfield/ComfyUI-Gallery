@@ -29,8 +29,8 @@ const GalleryModal = () => {
             }}
             styles={{
                 content: {
-                    height: 'calc(100vh - 24px)',
-                    maxHeight: 'calc(100vh - 24px)',
+                    height: 'calc(100vh - 48px)',
+                    maxHeight: 'calc(100vh - 48px)',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
