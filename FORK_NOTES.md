@@ -12,8 +12,8 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Replaced separate Newest/Oldest and Name up/down controls with compact toggle buttons.
 - Added an All/Images/Videos media filter.
 - Replaced the default modal close icon with a red Close button in the header row.
-- Replaced the left header toggle with a compact folder-tree toggle icon.
-- Added a horizontal folder row below the header for root folders and subfolders.
+- Replaced the left header toggle with a compact icon that shows or hides the horizontal folder navigation.
+- Restyled horizontal folder navigation into icon-led root and child folder rows using separators instead of section labels.
 - Updated folder selection so parent folders show media from their descendant folders.
 
 ### ComfyUI toolbar entry point

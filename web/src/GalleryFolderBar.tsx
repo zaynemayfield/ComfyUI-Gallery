@@ -1,23 +1,53 @@
 import { Button, Flex, Typography } from 'antd';
-import FolderOutlined from '@ant-design/icons/lib/icons/FolderOutlined';
+import { BranchesOutlined, FolderOpenOutlined, FolderOutlined, RightOutlined } from '@ant-design/icons';
 import { useMemo } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useGalleryContext } from './GalleryContext';
 import { getChildFolders, getFolderLabel, getRootFolders } from './galleryFolderUtils';
 
 const chipStyle = (active: boolean): CSSProperties => ({
-    height: 26,
-    padding: '0 10px',
-    borderRadius: 4,
+    height: 24,
+    padding: '0 6px',
+    borderRadius: 3,
     fontSize: 12,
     fontWeight: active ? 600 : 400,
+    border: active ? '1px solid rgba(22, 119, 255, 0.55)' : '1px solid transparent',
+    background: active ? 'rgba(22, 119, 255, 0.12)' : 'transparent',
+    color: active ? '#69b1ff' : undefined,
+    boxShadow: 'none',
 });
+
+const Separator = () => (
+    <Typography.Text type="secondary" style={{ fontSize: 12, opacity: 0.65 }}>
+        |
+    </Typography.Text>
+);
+
+const FolderButton = ({
+    active,
+    children,
+    onClick,
+}: {
+    active: boolean;
+    children: ReactNode;
+    onClick: () => void;
+}) => (
+    <Button
+        size="small"
+        type="text"
+        onClick={onClick}
+        style={chipStyle(active)}
+    >
+        {children}
+    </Button>
+);
 
 const GalleryFolderBar = () => {
     const { data, currentFolder, setCurrentFolder, setSelectedImages } = useGalleryContext();
 
     const rootFolders = useMemo(() => getRootFolders(data), [data]);
     const childFolders = useMemo(() => getChildFolders(data, currentFolder), [data, currentFolder]);
+    const activeRoot = useMemo(() => currentFolder.split('/').filter(Boolean)[0] || currentFolder, [currentFolder]);
     const ancestorFolders = useMemo(() => {
         const parts = currentFolder.split('/').filter(Boolean);
         return parts.map((_, index) => parts.slice(0, index + 1).join('/')).slice(1);
@@ -32,74 +62,75 @@ const GalleryFolderBar = () => {
 
     return (
         <Flex
-            align="center"
-            gap={8}
-            wrap="wrap"
+            vertical
+            gap={4}
             style={{
                 borderTop: '1px solid rgba(127, 127, 127, 0.18)',
-                paddingTop: 8,
-                rowGap: 6,
+                paddingTop: 7,
+                paddingBottom: 2,
             }}
         >
-            <Typography.Text
-                type="secondary"
+            <Flex
+                align="center"
+                gap={6}
+                wrap="wrap"
                 style={{
-                    fontSize: 12,
-                    whiteSpace: 'nowrap',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
+                    minHeight: 26,
                 }}
             >
-                <FolderOutlined />
-                Folders
-            </Typography.Text>
-            {rootFolders.map(folder => (
-                <Button
-                    key={folder}
-                    size="small"
-                    type={currentFolder === folder || currentFolder.startsWith(`${folder}/`) ? 'primary' : 'default'}
-                    onClick={() => selectFolder(folder)}
-                    style={chipStyle(currentFolder === folder || currentFolder.startsWith(`${folder}/`))}
-                >
-                    {getFolderLabel(folder)}
-                </Button>
-            ))}
-            {ancestorFolders.length > 0 && (
-                <Flex align="center" gap={4} wrap="wrap">
-                    <Typography.Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-                        Path
-                    </Typography.Text>
-                    {ancestorFolders.map(folder => (
-                        <Button
-                            key={folder}
-                            size="small"
-                            type={folder === currentFolder ? 'primary' : 'text'}
+                <FolderOutlined style={{ color: '#69b1ff', fontSize: 14 }} />
+                {rootFolders.map((folder, index) => (
+                    <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        {index > 0 && <Separator />}
+                        <FolderButton
+                            active={activeRoot === folder}
                             onClick={() => selectFolder(folder)}
-                            style={chipStyle(folder === currentFolder)}
                         >
                             {getFolderLabel(folder)}
-                        </Button>
+                        </FolderButton>
+                    </span>
+                ))}
+            </Flex>
+            {(ancestorFolders.length > 0 || childFolders.length > 0) && (
+                <Flex
+                    align="center"
+                    gap={6}
+                    wrap="wrap"
+                    style={{
+                        minHeight: 26,
+                        marginLeft: 20,
+                        paddingLeft: 8,
+                        borderLeft: '2px solid rgba(105, 177, 255, 0.35)',
+                    }}
+                >
+                    <BranchesOutlined style={{ color: '#69b1ff', fontSize: 13 }} />
+                    {ancestorFolders.map((folder, index) => (
+                        <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            {index > 0 && <RightOutlined style={{ fontSize: 10, opacity: 0.6 }} />}
+                            <FolderButton
+                                active={folder === currentFolder}
+                                onClick={() => selectFolder(folder)}
+                            >
+                                {getFolderLabel(folder)}
+                            </FolderButton>
+                        </span>
+                    ))}
+                    {ancestorFolders.length > 0 && childFolders.length > 0 && (
+                        <RightOutlined style={{ fontSize: 10, opacity: 0.6 }} />
+                    )}
+                    {childFolders.map((folder, index) => (
+                        <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            {index > 0 && <Separator />}
+                            <FolderButton
+                                active={folder === currentFolder}
+                                onClick={() => selectFolder(folder)}
+                            >
+                                <FolderOpenOutlined style={{ marginRight: 5 }} />
+                                {getFolderLabel(folder)}
+                            </FolderButton>
+                        </span>
                     ))}
                 </Flex>
-            )}
-            {childFolders.length > 0 && (
-                <>
-                    <Typography.Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-                        Subfolders
-                    </Typography.Text>
-                    {childFolders.map(folder => (
-                        <Button
-                            key={folder}
-                            size="small"
-                            type={folder === currentFolder ? 'primary' : 'default'}
-                            onClick={() => selectFolder(folder)}
-                            style={chipStyle(folder === currentFolder)}
-                        >
-                            {getFolderLabel(folder)}
-                        </Button>
-                    ))}
-                </>
             )}
         </Flex>
     );

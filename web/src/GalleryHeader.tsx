@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Flex, AutoComplete, Button, Segmented, message, Popconfirm, Tooltip } from 'antd';
-import { CloseOutlined, CloseSquareFilled, FolderOpenOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
+import { CloseOutlined, CloseSquareFilled, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
 import Typography from 'antd/es/typography/Typography';
@@ -19,12 +19,12 @@ const GalleryHeader = () => {
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
         selectedImages, setSelectedImages,
-        siderCollapsed, setSiderCollapsed
     } = useGalleryContext();
 
     const [search, setSearch] = useState("");
     const [dateSort, setDateSort] = useState<'Newest' | 'Oldest'>('Newest');
     const [nameSort, setNameSort] = useState<'Name ↑' | 'Name ↓'>('Name ↑');
+    const [showFolderBar, setShowFolderBar] = useState(true);
     const [showClose, setShowClose] = useState(false);
     const [targetDate, setTargetDate] = useState<number>();
     const [countdown] = useCountDown({
@@ -98,12 +98,13 @@ const GalleryHeader = () => {
                     <Typography style={{ fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap' }}>
                         ComfyUI Gallery
                     </Typography>
-                    <Tooltip title={siderCollapsed ? 'Show folder tree' : 'Hide folder tree'} placement="bottom">
+                    <Tooltip title={showFolderBar ? 'Hide folder navigation' : 'Show folder navigation'} placement="bottom">
                         <Button
                             size="small"
-                            icon={<FolderOpenOutlined />}
-                            onClick={() => setSiderCollapsed((prev: boolean) => !prev)}
-                            aria-label={siderCollapsed ? 'Show folder tree' : 'Hide folder tree'}
+                            type={showFolderBar ? 'primary' : 'default'}
+                            icon={showFolderBar ? <FolderOpenOutlined /> : <FolderOutlined />}
+                            onClick={() => setShowFolderBar(prev => !prev)}
+                            aria-label={showFolderBar ? 'Hide folder navigation' : 'Show folder navigation'}
                         />
                     </Tooltip>
                 </Flex>
@@ -309,7 +310,7 @@ const GalleryHeader = () => {
                     </Button>
                 </Flex>
             </Flex>
-            <GalleryFolderBar />
+            {showFolderBar && <GalleryFolderBar />}
         </Flex>
     );
 };
