@@ -18,6 +18,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Persistent server-side media index for faster refreshes and repeat browsing from other clients.
 - Compressed gallery JSON responses and avoided duplicate startup image fetches.
 - Lazy-loaded full raw metadata from the preview panel instead of sending every workflow in the gallery list.
+- Stored lightweight metadata in the persistent index to reduce repeat-load disk reads.
 - Video duration metadata when `ffprobe` is available.
 - Include Subfolders toggle.
 - Date section navigation.

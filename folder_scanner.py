@@ -152,6 +152,33 @@ def _build_file_data(full_path, dir_path, full_base_path, entry, stat):
     }
 
 
+def _compact_metadata(metadata):
+    if not isinstance(metadata, dict):
+        return metadata
+
+    compact = {}
+    if "fileinfo" in metadata:
+        compact["fileinfo"] = metadata["fileinfo"]
+    if "prompt" in metadata:
+        compact["prompt"] = metadata["prompt"]
+
+    for key, value in metadata.items():
+        if key in ("fileinfo", "prompt", "workflow"):
+            continue
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            compact[key] = value
+
+    return compact
+
+
+def _compact_file_data(file_data):
+    if not isinstance(file_data, dict):
+        return file_data
+    compact = dict(file_data)
+    compact["metadata"] = _compact_metadata(compact.get("metadata", {}))
+    return compact
+
+
 def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_extensions=None):
     """Scans directories for files matching allowed extensions.
 
@@ -193,9 +220,9 @@ def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_exte
                         indexed = indexed_entries.get(rel_file)
 
                         if indexed and indexed.get("signature") == signature and isinstance(indexed.get("data"), dict):
-                            file_data = indexed["data"]
+                            file_data = _compact_file_data(indexed["data"])
                         else:
-                            file_data = _build_file_data(full_path, dir_path, full_base_path, entry, stat)
+                            file_data = _compact_file_data(_build_file_data(full_path, dir_path, full_base_path, entry, stat))
                             changed = True
 
                         next_entries[rel_file] = {
