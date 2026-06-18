@@ -1,6 +1,5 @@
 import { Button, Checkbox, Image, Typography } from 'antd';
 import type { FileDetails } from './types';
-import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
 import LeftOutlined from '@ant-design/icons/lib/icons/LeftOutlined';
 import PictureOutlined from '@ant-design/icons/lib/icons/PictureOutlined';
 import RightOutlined from '@ant-design/icons/lib/icons/RightOutlined';
@@ -81,7 +80,6 @@ export type ImageCardDimensions = {
 function ImageCard({
     image,
     index,
-    onInfoClick,
     onVideoClick,
     onPreviewOpen,
     cardWidth = ImageCardWidth,
@@ -89,7 +87,6 @@ function ImageCard({
 }: {
     image: FileDetails & { dragFolder?: string; compactCount?: number; compactItems?: FileDetails[] };
     index: number;
-    onInfoClick: (image: FileDetails) => void;
     onVideoClick: (image: FileDetails | undefined) => void;
     onPreviewOpen?: (image: FileDetails, group: FileDetails[]) => void;
     cardWidth?: number;
@@ -536,7 +533,7 @@ function ImageCard({
                             margin: 0,
                             color: "white",
                             lineHeight: '18px',
-                            maxWidth: cardWidth - 58,
+                            maxWidth: cardWidth - 20,
                         }}
                         ellipsis
                     >
@@ -548,23 +545,13 @@ function ImageCard({
                             color: 'rgba(255,255,255,0.82)',
                             fontSize: 11,
                             lineHeight: '14px',
-                            maxWidth: cardWidth - 58,
+                            maxWidth: cardWidth - 20,
                         }}
                         ellipsis
                     >
                         {detailsText || '\u00A0'}
                     </Typography.Text>
                 </div>
-                <Button
-                    color="cyan"
-                    variant="filled"
-                    icon={<InfoCircleOutlined />}
-                    size={"middle"}
-                    onClick={() => {
-                        onInfoClick(currentImage);
-                        document.getElementById(currentImage.url)?.click();
-                    }}
-                />
             </div>
         </div>
     </>)

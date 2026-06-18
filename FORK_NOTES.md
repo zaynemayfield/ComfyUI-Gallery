@@ -39,6 +39,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added a date range filter and hardened preview overlay action buttons so Move and Rename remain clickable above the preview layer.
 - Fixed bulk Move folder selection so interacting with the destination picker does not clear the selected media.
 - Reworked preview Rename into a controlled modal and tightened preview action button cursor behavior.
+- Moved metadata and raw metadata viewing into the normal media preview overlay and removed the separate card info button.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.

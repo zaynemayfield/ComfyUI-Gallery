@@ -1,8 +1,9 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Empty, Image, Input, message, Modal, Slider, Spin, Tree } from 'antd';
+import { Button, Card, Descriptions, Empty, Image, Input, message, Modal, Slider, Spin, Tree, Typography } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import DeleteOutlined from '@ant-design/icons/lib/icons/DeleteOutlined';
 import EditOutlined from '@ant-design/icons/lib/icons/EditOutlined';
+import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
 import FullscreenOutlined from '@ant-design/icons/lib/icons/FullscreenOutlined';
 import FolderOpenOutlined from '@ant-design/icons/lib/icons/FolderOpenOutlined';
 import MutedOutlined from '@ant-design/icons/lib/icons/MutedOutlined';
@@ -14,12 +15,13 @@ import { AutoSizer } from 'react-virtualized';
 import { VariableSizeGrid } from 'react-window';
 import ImageCard, { ImageCardHeight, ImageCardWidth } from './ImageCard';
 import { useGalleryContext } from './GalleryContext';
-import { MetadataView } from './MetadataView';
 import { ModelViewer } from './ModelViewer';
 import type { FileDetails } from './types';
 import { BASE_PATH, BASE_Z_INDEX, ComfyAppApi } from "./ComfyAppApi";
 import { getFolderMediaList } from './galleryFolderUtils';
 import type { GalleryPreviewSize } from './GalleryContext';
+import { parseComfyMetadata } from './metadata-parser/metadataParser';
+import ReactJsonView from '@microlink/react-json-view';
 
 const GRID_GAP = 16;
 const PREVIEW_SIZE_DIMENSIONS: Record<GalleryPreviewSize, { width: number; height: number }> = {
@@ -349,12 +351,16 @@ const PreviewActions = ({
     actionItems,
     currentFolder,
     folderKeys,
+    metadataVisible,
+    onToggleMetadata,
     onDone,
 }: {
     currentImage: FileDetails;
     actionItems: FileDetails[];
     currentFolder: string;
     folderKeys: string[];
+    metadataVisible: boolean;
+    onToggleMetadata: () => void;
     onDone: () => void;
 }) => {
     const [moveOpen, setMoveOpen] = useState(false);
@@ -454,6 +460,9 @@ const PreviewActions = ({
                 <Button icon={<EditOutlined />} loading={busy} onMouseDown={event => event.stopPropagation()} onClick={() => setRenameOpen(true)} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <span style={{ cursor: 'pointer', userSelect: 'none' }}>Rename</span>
                 </Button>
+                <Button type={metadataVisible ? 'primary' : 'default'} icon={<InfoCircleOutlined />} onMouseDown={event => event.stopPropagation()} onClick={onToggleMetadata} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none' }}>Metadata</span>
+                </Button>
             </div>
             <Modal
                 open={renameOpen}
@@ -501,6 +510,63 @@ const PreviewActions = ({
     );
 };
 
+const PreviewMetadataPanel = ({ image }: { image: FileDetails }) => {
+    const { settings } = useGalleryContext();
+    const [showRaw, setShowRaw] = useState(false);
+    const meta = useMemo(() => parseComfyMetadata(image.metadata), [image.metadata]);
+    const metadataItems = useMemo(() => Object.entries(meta).map(([key, value]) => ({
+        label: <Typography.Text strong>{key}</Typography.Text>,
+        children: (
+            <Typography.Paragraph
+                style={{ marginBottom: 0, whiteSpace: 'pre-line', wordBreak: 'break-word' }}
+                ellipsis={typeof value === 'string' && value.length > 280 ? { rows: 5, expandable: 'collapsible' } : false}
+            >
+                {String(value)}
+            </Typography.Paragraph>
+        ),
+        span: 1,
+    })), [meta]);
+
+    return (
+        <Card
+            size="small"
+            title="Metadata"
+            extra={<Button size="small" onClick={() => setShowRaw(value => !value)}>{showRaw ? 'Parsed' : 'Raw'}</Button>}
+            style={{
+                width: 380,
+                maxWidth: '30vw',
+                maxHeight: 'calc(92vh - 66px)',
+                overflow: 'auto',
+            }}
+            bodyStyle={{ padding: 10 }}
+            onMouseDown={event => event.stopPropagation()}
+            onClick={event => event.stopPropagation()}
+        >
+            {showRaw ? (
+                <ReactJsonView
+                    theme={settings.darkMode ? "apathy" : "apathy:inverted"}
+                    src={image.metadata || {}}
+                    name={false}
+                    collapsed={2}
+                    enableClipboard
+                    displayDataTypes={false}
+                />
+            ) : (
+                <Descriptions
+                    bordered
+                    column={1}
+                    size="small"
+                    items={metadataItems}
+                    styles={{
+                        label: { width: 110 },
+                        content: { maxWidth: 230 },
+                    }}
+                />
+            )}
+        </Card>
+    );
+};
+
 const PreviewFrame = ({
     children,
     currentImage,
@@ -515,30 +581,56 @@ const PreviewFrame = ({
     currentFolder: string;
     folderKeys: string[];
     onDone: () => void;
-}) => (
-    <div
-        style={{
-            maxWidth: '96vw',
-            maxHeight: '92vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-        }}
-    >
-        <div style={{ maxHeight: 'calc(92vh - 58px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {children}
+}) => {
+    const [metadataVisible, setMetadataVisible] = useState(false);
+
+    return (
+        <div
+            style={{
+                maxWidth: '96vw',
+                maxHeight: '92vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+            }}
+        >
+            <div
+                style={{
+                    maxHeight: 'calc(92vh - 58px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 12,
+                    width: '100%',
+                }}
+            >
+                <div
+                    style={{
+                        maxWidth: metadataVisible ? 'calc(96vw - 392px)' : '96vw',
+                        maxHeight: 'calc(92vh - 58px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    {children}
+                </div>
+                {metadataVisible && <PreviewMetadataPanel image={currentImage} />}
+            </div>
+            <PreviewActions
+                currentImage={currentImage}
+                actionItems={actionItems}
+                currentFolder={currentFolder}
+                folderKeys={folderKeys}
+                metadataVisible={metadataVisible}
+                onToggleMetadata={() => setMetadataVisible(value => !value)}
+                onDone={onDone}
+            />
         </div>
-        <PreviewActions
-            currentImage={currentImage}
-            actionItems={actionItems}
-            currentFolder={currentFolder}
-            folderKeys={folderKeys}
-            onDone={onDone}
-        />
-    </div>
-);
+    );
+};
 
 const GalleryImageGrid = () => {
     const {
@@ -731,19 +823,6 @@ const GalleryImageGrid = () => {
         setPendingScrollTarget(target);
     }, [mediaBatchSize]);
 
-    const handleInfoClick = useCallback((image: FileDetails) => {
-        // Set the info modal target
-
-        // If the item is media/audio/3d, set previewing state so the preview group uses media renderer
-        if (image.type === 'media' || image.type === 'audio' || image.type === '3d') {
-            setPreviewingVideo(image.name);
-        } else {
-            setPreviewingVideo(undefined);
-        }
-
-        setImageInfoName(image.name);
-    }, [setImageInfoName, setPreviewingVideo]);
-
     const Cell = useCallback(({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
         const index = rowIndex * previewLayout.columnCount + columnIndex;
         const image = visibleImagesDetailsList[index];
@@ -885,7 +964,6 @@ const GalleryImageGrid = () => {
                     index={index}
                     cardWidth={previewLayout.cardWidth}
                     cardHeight={previewLayout.cardHeight}
-                    onInfoClick={handleInfoClick}
                     onVideoClick={(selectedImage) => setPreviewingVideo(selectedImage?.name)}
                     onPreviewOpen={(selectedImage, group) => {
                         setPreviewActionGroup(group.length > 1 ? group : [selectedImage]);
@@ -893,7 +971,7 @@ const GalleryImageGrid = () => {
                 />
             </div>
         );
-    }, [autoSizer.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow, pendingScrollTarget]);
+    }, [autoSizer.width, visibleImagesDetailsList, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow, pendingScrollTarget]);
 
     useEffect(() => {
         const { width, height } = autoSizer;
@@ -980,20 +1058,8 @@ const GalleryImageGrid = () => {
     }, []);
 
     const customImageRender = useCallback((originalNode: React.ReactElement, info: { current: number }) => {
-        if (imageInfoName != undefined) {
-            let image = previewableImages[info.current];
-            if (!image) return originalNode;
-            return (
-                <MetadataView
-                    image={image}
-                    onShowRaw={() => setShowRawMetadata(true)}
-                    showRawMetadata={showRawMetadata}
-                    setShowRawMetadata={setShowRawMetadata}
-                />
-            );
-        } else {
-            let image = previewableImages[info.current];
-            if (!image) return originalNode;
+        let image = previewableImages[info.current];
+        if (!image) return originalNode;
             const actionItems = getPreviewActionItems(image);
             const renderWithActions = (node: React.ReactNode) => (
                 <PreviewFrame
@@ -1042,17 +1108,27 @@ const GalleryImageGrid = () => {
             if (image.type === 'media') {
                 return renderWithActions(<PreviewVideo image={image} />);
             }
-            return renderWithActions(originalNode);
-        }
+            return renderWithActions(
+                <img
+                    src={`${BASE_PATH}${image.url}`}
+                    alt={image.name}
+                    style={{
+                        maxWidth: '100%',
+                        maxHeight: 'calc(92vh - 66px)',
+                        width: 'auto',
+                        height: 'auto',
+                        objectFit: 'contain',
+                        borderRadius: 6,
+                        userSelect: 'none',
+                    }}
+                />
+            );
     }, [
-        imageInfoName,
         previewableImages,
         getPreviewActionItems,
         currentFolder,
         folderKeys,
         handlePreviewActionDone,
-        showRawMetadata,
-        setShowRawMetadata,
         settings.autoPlayVideos,
         stopPropagation
     ]);
