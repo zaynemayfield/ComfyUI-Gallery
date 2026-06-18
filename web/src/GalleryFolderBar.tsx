@@ -1,7 +1,7 @@
 import { Button, Flex, Input, Modal, Popconfirm, Tree, Tooltip, Typography, message } from 'antd';
 import { BranchesOutlined, DeleteOutlined, EditOutlined, FolderAddOutlined, FolderOpenOutlined, FolderOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, Key, ReactNode } from 'react';
 import { useGalleryContext } from './GalleryContext';
 import { getChildFolders, getFolderKeys, getFolderLabel, getRootFolders } from './galleryFolderUtils';
 import { ComfyAppApi } from './ComfyAppApi';
@@ -200,6 +200,7 @@ const GalleryFolderBar = () => {
     const [renameValue, setRenameValue] = useState("");
     const [moveModalOpen, setMoveModalOpen] = useState(false);
     const [moveTargetParent, setMoveTargetParent] = useState<string | null>(null);
+    const [moveExpandedKeys, setMoveExpandedKeys] = useState<Key[]>([]);
     const [busy, setBusy] = useState(false);
 
     const rootFolders = useMemo(() => getRootFolders(data), [data]);
@@ -242,22 +243,25 @@ const GalleryFolderBar = () => {
         () => buildMoveTreeData(folderKeys, currentFolder, moveTargetParent, parentFolder),
         [folderKeys, currentFolder, moveTargetParent, parentFolder]
     );
-    const moveExpandedKeys = useMemo(
-        () => Array.from(new Set([
-            ...getAncestorTreeKeys(currentFolder),
-            ...getAncestorTreeKeys(moveTargetParent),
-        ])),
-        [currentFolder, moveTargetParent]
-    );
 
     const openMoveDialog = () => {
         setMoveTargetParent(null);
+        setMoveExpandedKeys(getAncestorTreeKeys(currentFolder));
         setMoveModalOpen(true);
     };
 
     const closeMoveDialog = () => {
         setMoveModalOpen(false);
         setMoveTargetParent(null);
+        setMoveExpandedKeys([]);
+    };
+
+    const selectMoveTarget = (targetParent: string) => {
+        setMoveTargetParent(targetParent);
+        setMoveExpandedKeys(previousKeys => Array.from(new Set([
+            ...previousKeys.map(String),
+            ...getAncestorTreeKeys(targetParent),
+        ])));
     };
 
     const handleMoveFolder = async () => {
@@ -460,12 +464,13 @@ const GalleryFolderBar = () => {
                             showIcon
                             showLine
                             blockNode
-                            defaultExpandedKeys={moveExpandedKeys}
+                            expandedKeys={moveExpandedKeys}
                             selectedKeys={moveTargetParent === null ? [] : [folderPathToTreeKey(moveTargetParent)]}
                             treeData={moveTree.treeData}
                             expandAction={false}
+                            onExpand={(keys) => setMoveExpandedKeys(keys)}
                             onSelect={(keys) => {
-                                if (keys.length > 0) setMoveTargetParent(treeKeyToFolderPath(String(keys[0])));
+                                if (keys.length > 0) selectMoveTarget(treeKeyToFolderPath(String(keys[0])));
                             }}
                         />
                     </div>
