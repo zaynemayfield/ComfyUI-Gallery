@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { Empty, Image, Spin } from 'antd';
 import { AutoSizer } from 'react-virtualized';
-import { FixedSizeGrid } from 'react-window';
+import { VariableSizeGrid } from 'react-window';
 import ImageCard, { ImageCardHeight, ImageCardWidth } from './ImageCard';
 import { useGalleryContext } from './GalleryContext';
 import { MetadataView } from './MetadataView';
@@ -51,6 +51,8 @@ const takeMediaBatch = (items: FileDetails[], limit: number) => {
 
     return result;
 };
+
+const DATE_DIVIDER_ROW_HEIGHT = 26;
 
 const GalleryImageGrid = () => {
     const {
@@ -133,6 +135,17 @@ const GalleryImageGrid = () => {
         () => Math.ceil(visibleImagesDetailsList.length / Math.max(1, previewLayout.columnCount)),
         [visibleImagesDetailsList.length, previewLayout.columnCount]
     );
+    const getRowHeight = useCallback((rowIndex: number) => {
+        const firstItemInRow = visibleImagesDetailsList[rowIndex * previewLayout.columnCount];
+        return firstItemInRow?.type === 'divider' ? DATE_DIVIDER_ROW_HEIGHT : previewLayout.rowHeight;
+    }, [visibleImagesDetailsList, previewLayout.columnCount, previewLayout.rowHeight]);
+    const loadedGridHeight = useMemo(() => {
+        let total = 0;
+        for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+            total += getRowHeight(rowIndex);
+        }
+        return total;
+    }, [rowCount, getRowHeight]);
 
     const imagesUrlsLists = useMemo(() =>
         visibleImagesDetailsList.filter(isMediaItem).map(image => `${BASE_PATH}${image.url}`),
@@ -170,12 +183,12 @@ const GalleryImageGrid = () => {
                         ...style,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        justifyContent: 'flex-start',
                         width: gridSize.width,
                         gridColumn: `span ${previewLayout.columnCount}`,
                         background: 'transparent',
                         padding: 0,
-                        minHeight: 48,
+                        height: DATE_DIVIDER_ROW_HEIGHT,
                         position: 'absolute',
                         zIndex: 2
                     }}
@@ -185,30 +198,18 @@ const GalleryImageGrid = () => {
                             width: '100%',
                             display: 'flex',
                             alignItems: 'center',
-                            position: 'relative'
+                            position: 'relative',
+                            gap: 8,
                         }}
                     >
-                        <div
-                            style={{
-                                flex: 1,
-                                borderBottom: '2px solid #888',
-                                opacity: 0.3
-                            }}
-                        />
                         <span
                             style={{
-                                margin: '0 24px',
-                                fontWeight: 700,
-                                fontSize: 22,
-                                color: '#ccc',
-                                background: '#23272f',
-                                borderRadius: 8,
-                                padding: '2px 24px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                                border: '1px solid #333',
-                                display: 'flex',
-                                alignItems: 'center',
-                                height: 40
+                                flex: '0 0 auto',
+                                fontWeight: 600,
+                                fontSize: 12,
+                                color: '#8c8c8c',
+                                lineHeight: '18px',
+                                padding: 0,
                             }}
                         >
                             {image.name}
@@ -216,8 +217,8 @@ const GalleryImageGrid = () => {
                         <div
                             style={{
                                 flex: 1,
-                                borderBottom: '2px solid #888',
-                                opacity: 0.3
+                                borderBottom: '1px solid #888',
+                                opacity: 0.22
                             }}
                         />
                     </div>
@@ -293,11 +294,10 @@ const GalleryImageGrid = () => {
 
     const handleGridScroll = useCallback(({ scrollTop }: { scrollTop: number }) => {
         const scrollBottom = scrollTop + autoSizer.height;
-        const loadedHeight = rowCount * previewLayout.rowHeight;
-        if (loadedHeight - scrollBottom <= previewLayout.rowHeight * 2) {
+        if (loadedGridHeight - scrollBottom <= previewLayout.rowHeight * 2) {
             loadNextBatch();
         }
-    }, [autoSizer.height, rowCount, previewLayout.rowHeight, loadNextBatch]);
+    }, [autoSizer.height, loadedGridHeight, previewLayout.rowHeight, loadNextBatch]);
 
     // Helper to resolve image for Info/Image render
     const resolvePreviewableImage = useCallback((image: FileDetails | undefined, info: { current: number }) => {
@@ -491,11 +491,12 @@ const GalleryImageGrid = () => {
                             }
                             const layout = getPreviewLayout(width, previewSize);
                             return (
-                                <FixedSizeGrid
+                                <VariableSizeGrid
+                                    key={`${previewSize}-${layout.columnCount}-${visibleImagesDetailsList.length}`}
                                     columnCount={layout.columnCount}
                                     rowCount={rowCount}
-                                    columnWidth={layout.columnWidth}
-                                    rowHeight={layout.rowHeight}
+                                    columnWidth={() => layout.columnWidth}
+                                    rowHeight={getRowHeight}
                                     width={width}
                                     height={height}
                                     className={"grid-element"}
@@ -508,7 +509,7 @@ const GalleryImageGrid = () => {
                                     }}
                                 >
                                     {Cell}
-                                </FixedSizeGrid>
+                                </VariableSizeGrid>
                             );
                         }}
                     </AutoSizer>

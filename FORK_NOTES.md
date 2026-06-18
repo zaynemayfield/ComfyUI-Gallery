@@ -24,6 +24,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Updated the move picker so selecting a destination automatically expands the tree branch that shows the preview placement.
 - Updated the media grid sizing so cards fit the available width without needing a bottom horizontal scrollbar.
 - Added subtle media-type borders to preview cards so image and video thumbnails are easier to distinguish.
+- Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point
