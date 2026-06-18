@@ -63,6 +63,11 @@ type DateDividerRow = {
     mediaBefore: number;
 };
 
+type MediaActionChange =
+    | { type: 'delete'; items: FileDetails[] }
+    | { type: 'move'; items: FileDetails[]; targetFolder: string }
+    | { type: 'rename'; items: Array<{ item: FileDetails; newName: string }> };
+
 const getCompactGroupKey = (item: FileDetails) => {
     if (!isMediaItem(item)) return item.name;
     const stem = item.name.replace(/\.[^/.]+$/, "");
@@ -385,7 +390,7 @@ const PreviewActions = ({
     folderKeys: string[];
     metadataVisible: boolean;
     onToggleMetadata: () => void;
-    onDone: () => void;
+    onDone: (change?: MediaActionChange) => void;
 }) => {
     const [moveOpen, setMoveOpen] = useState(false);
     const [selectedFolder, setSelectedFolder] = useState<string | undefined>(currentImage.sourceFolder || currentFolder);
@@ -400,16 +405,24 @@ const PreviewActions = ({
         setRenameValue(getDefaultRenameValue(currentImage, isCompactGroup));
     }, [currentImage.url, isCompactGroup]);
 
-    const runBatchAction = async (label: string, action: (image: FileDetails) => Promise<boolean>) => {
+    const runBatchAction = async (
+        label: string,
+        action: (image: FileDetails) => Promise<boolean>,
+        buildChange?: (items: FileDetails[]) => MediaActionChange
+    ) => {
         setBusy(true);
         try {
             let completed = 0;
+            const completedItems: FileDetails[] = [];
             for (const item of actionItems) {
-                if (await action(item)) completed++;
+                if (await action(item)) {
+                    completed++;
+                    completedItems.push(item);
+                }
             }
             if (completed === actionItems.length) {
                 message.success(`${label} ${completed} file${completed === 1 ? '' : 's'}.`);
-                onDone();
+                onDone(buildChange?.(completedItems));
             } else {
                 message.error(`${label} ${completed} of ${actionItems.length} files.`);
             }
@@ -427,7 +440,11 @@ const PreviewActions = ({
             okText: 'Delete',
             okButtonProps: { danger: true },
             zIndex: BASE_Z_INDEX + 300,
-            onOk: () => runBatchAction('Deleted', image => ComfyAppApi.deleteImage(image.url)),
+            onOk: () => runBatchAction(
+                'Deleted',
+                image => ComfyAppApi.deleteImage(image.url),
+                items => ({ type: 'delete', items })
+            ),
         });
     };
 
@@ -437,21 +454,35 @@ const PreviewActions = ({
             message.error('Use a single file name without slashes.');
             return;
         }
-        await runBatchAction('Renamed', image => ComfyAppApi.renameImage(
-            image.url,
-            buildRenamedFileName(image, nextValue, isCompactGroup)
-        ));
+        await runBatchAction(
+            'Renamed',
+            image => ComfyAppApi.renameImage(
+                image.url,
+                buildRenamedFileName(image, nextValue, isCompactGroup)
+            ),
+            items => ({
+                type: 'rename',
+                items: items.map(item => ({
+                    item,
+                    newName: buildRenamedFileName(item, nextValue, isCompactGroup),
+                })),
+            })
+        );
         setRenameOpen(false);
     };
 
     const confirmMove = () => {
         if (!selectedFolder) return;
-        runBatchAction('Moved', image => {
-            const sourcePath = getFilePath(image, currentFolder);
-            const targetPath = `${selectedFolder}/${image.name}`;
-            if (sourcePath === targetPath) return Promise.resolve(true);
-            return ComfyAppApi.moveImage(sourcePath, targetPath);
-        }).then(() => setMoveOpen(false));
+        runBatchAction(
+            'Moved',
+            image => {
+                const sourcePath = getFilePath(image, currentFolder);
+                const targetPath = `${selectedFolder}/${image.name}`;
+                if (sourcePath === targetPath) return Promise.resolve(true);
+                return ComfyAppApi.moveImage(sourcePath, targetPath);
+            },
+            items => ({ type: 'move', items, targetFolder: selectedFolder })
+        ).then(() => setMoveOpen(false));
     };
 
     return (
@@ -608,7 +639,7 @@ const PreviewFrame = ({
     folderKeys: string[];
     currentIndex: number;
     totalCount: number;
-    onDone: () => void;
+    onDone: (change?: MediaActionChange) => void;
 }) => {
     const [metadataVisible, setMetadataVisible] = useState(false);
 
@@ -704,7 +735,7 @@ const GalleryImageGrid = () => {
         setShowRawMetadata,
         settings,
         loading,
-        runAsync,
+        mutate,
         previewSize,
         mediaBatchSize,
         compactOutputs,
@@ -1067,10 +1098,59 @@ const GalleryImageGrid = () => {
         setPreviewActionGroup(undefined);
     }, [setImageInfoName, setPreviewingVideo]);
 
-    const handlePreviewActionDone = useCallback(() => {
+    const buildStaticUrl = useCallback((folder: string, fileName: string) => (
+        `/static_gallery/${folder ? `${folder}/` : ''}${fileName}`.replace(/\\/g, '/')
+    ), []);
+
+    const applyPreviewActionChange = useCallback((change?: MediaActionChange) => {
+        if (!change) return;
+        mutate(oldData => {
+            if (!oldData?.folders) return oldData;
+            const folders = { ...oldData.folders };
+
+            if (change.type === 'delete') {
+                change.items.forEach(item => {
+                    const folder = item.sourceFolder || currentFolder;
+                    folders[folder] = { ...(folders[folder] ?? {}) };
+                    delete folders[folder][item.name];
+                });
+            }
+
+            if (change.type === 'move') {
+                folders[change.targetFolder] = { ...(folders[change.targetFolder] ?? {}) };
+                change.items.forEach(item => {
+                    const sourceFolder = item.sourceFolder || currentFolder;
+                    folders[sourceFolder] = { ...(folders[sourceFolder] ?? {}) };
+                    delete folders[sourceFolder][item.name];
+                    folders[change.targetFolder][item.name] = {
+                        ...item,
+                        url: buildStaticUrl(change.targetFolder, item.name),
+                        sourceFolder: change.targetFolder,
+                    };
+                });
+            }
+
+            if (change.type === 'rename') {
+                change.items.forEach(({ item, newName }) => {
+                    const folder = item.sourceFolder || currentFolder;
+                    folders[folder] = { ...(folders[folder] ?? {}) };
+                    delete folders[folder][item.name];
+                    folders[folder][newName] = {
+                        ...item,
+                        name: newName,
+                        url: buildStaticUrl(folder, newName),
+                    };
+                });
+            }
+
+            return { ...oldData, folders };
+        });
+    }, [buildStaticUrl, currentFolder, mutate]);
+
+    const handlePreviewActionDone = useCallback((change?: MediaActionChange) => {
+        applyPreviewActionChange(change);
         closePreviewOverlay();
-        runAsync();
-    }, [closePreviewOverlay, runAsync]);
+    }, [applyPreviewActionChange, closePreviewOverlay]);
 
     const loadNextBatch = useCallback(() => {
         setVisibleMediaLimit(currentLimit => {

@@ -67,9 +67,9 @@ const GalleryHeader = () => {
         multiSelectMode, setMultiSelectMode,
         settings, setSettings,
         data,
+        mutate,
         currentFolder,
         imagesDetailsList,
-        runAsync,
     } = useGalleryContext();
 
     const [search, setSearch] = useState("");
@@ -178,6 +178,54 @@ const GalleryHeader = () => {
         setMultiSelectMode(selectableImages.length > 0);
     };
 
+    const selectedItemByUrl = useMemo(() => {
+        const byUrl = new Map<string, FileDetails>();
+        selectableImages.forEach(image => byUrl.set(image.url, image));
+        return byUrl;
+    }, [selectableImages]);
+
+    const buildStaticUrl = (folder: string, fileName: string) => (
+        `/static_gallery/${folder ? `${folder}/` : ''}${fileName}`.replace(/\\/g, '/')
+    );
+
+    const applyDeletedUrls = (urls: string[]) => {
+        const urlSet = new Set(urls);
+        mutate(oldData => {
+            if (!oldData?.folders) return oldData;
+            const folders = { ...oldData.folders };
+            urlSet.forEach(url => {
+                const item = selectedItemByUrl.get(url);
+                if (!item) return;
+                const folder = item.sourceFolder || currentFolder;
+                folders[folder] = { ...(folders[folder] ?? {}) };
+                delete folders[folder][item.name];
+            });
+            return { ...oldData, folders };
+        });
+    };
+
+    const applyMovedUrls = (urls: string[], targetFolder: string) => {
+        const urlSet = new Set(urls);
+        mutate(oldData => {
+            if (!oldData?.folders) return oldData;
+            const folders = { ...oldData.folders };
+            folders[targetFolder] = { ...(folders[targetFolder] ?? {}) };
+            urlSet.forEach(url => {
+                const item = selectedItemByUrl.get(url);
+                if (!item) return;
+                const sourceFolder = item.sourceFolder || currentFolder;
+                folders[sourceFolder] = { ...(folders[sourceFolder] ?? {}) };
+                delete folders[sourceFolder][item.name];
+                folders[targetFolder][item.name] = {
+                    ...item,
+                    url: buildStaticUrl(targetFolder, item.name),
+                    sourceFolder: targetFolder,
+                };
+            });
+            return { ...oldData, folders };
+        });
+    };
+
     const resolveSelectedUrlsForCompact = (actionLabel: 'delete' | 'move') => {
         if (!compactOutputs) return Promise.resolve(selectedImages);
 
@@ -207,18 +255,22 @@ const GalleryHeader = () => {
     const bulkDeleteSelected = async () => {
         const urlsToDelete = await resolveSelectedUrlsForCompact('delete');
         let deleted = 0;
+        const deletedUrls: string[] = [];
         for (const url of urlsToDelete) {
             try {
                 const success = await ComfyAppApi.deleteImage(url);
-                if (success) deleted++;
+                if (success) {
+                    deleted++;
+                    deletedUrls.push(url);
+                }
             } catch (e) {
                 console.error('Failed to delete image:', url, e);
             }
         }
         if (deleted > 0) {
             message.success(`Deleted ${deleted} file${deleted === 1 ? '' : 's'}.`);
+            applyDeletedUrls(deletedUrls);
             clearMultiSelect();
-            runAsync();
         } else {
             message.error('Failed to delete selected files.');
         }
@@ -230,6 +282,7 @@ const GalleryHeader = () => {
         try {
             const urlsToMove = await resolveSelectedUrlsForCompact('move');
             let moved = 0;
+            const movedUrls: string[] = [];
             for (const url of urlsToMove) {
                 const sourcePath = getGalleryRelativePath(url);
                 const fileName = getFileNameFromPath(sourcePath);
@@ -239,13 +292,16 @@ const GalleryHeader = () => {
                     continue;
                 }
                 const success = await ComfyAppApi.moveImage(sourcePath, targetPath);
-                if (success) moved++;
+                if (success) {
+                    moved++;
+                    movedUrls.push(url);
+                }
             }
             if (moved > 0) {
                 message.success(`Moved ${moved} file${moved === 1 ? '' : 's'}.`);
+                applyMovedUrls(movedUrls, moveTargetFolder);
                 setMoveModalOpen(false);
                 clearMultiSelect();
-                runAsync();
             } else {
                 message.error('Failed to move selected files.');
             }
