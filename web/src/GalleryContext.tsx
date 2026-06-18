@@ -115,6 +115,8 @@ export interface GalleryContextType {
     setSettings: (v: SettingsState) => void;
     selectedImages: string[];
     setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>;
+    multiSelectMode: boolean;
+    setMultiSelectMode: React.Dispatch<React.SetStateAction<boolean>>;
     siderCollapsed: boolean;
     setSiderCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -136,6 +138,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
     const [previewingVideo, setPreviewingVideo] = useState<string | undefined>(undefined);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [multiSelectMode, setMultiSelectMode] = useState(false);
     const [siderCollapsed, setSiderCollapsed] = useState(true);
     const size = useSize(document.querySelector('body'));
     const imagesBoxSize = useSize(document.querySelector('#imagesBox'));
@@ -394,6 +397,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         setSettings: saveSettings,
         selectedImages,
         setSelectedImages,
+        multiSelectMode,
+        setMultiSelectMode,
         siderCollapsed,
         setSiderCollapsed,
     }), [
@@ -427,6 +432,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         saveSettings,
         selectedImages,
         setSelectedImages,
+        multiSelectMode,
+        setMultiSelectMode,
         siderCollapsed,
         setSiderCollapsed,
     ]);

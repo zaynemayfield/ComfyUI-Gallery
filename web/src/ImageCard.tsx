@@ -1,4 +1,4 @@
-import { Button, Image, Typography } from 'antd';
+import { Button, Checkbox, Image, Typography } from 'antd';
 import type { FileDetails } from './types';
 import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
 import LeftOutlined from '@ant-design/icons/lib/icons/LeftOutlined';
@@ -18,7 +18,7 @@ const ImageCard3DThumbnail = ({
     cardWidth,
 }: {
     image: FileDetails;
-    onClick: () => void;
+    onClick: (event: React.MouseEvent) => void;
     cardWidth: number;
 }) => {
     const typeMatch = image.url.match(/\.([^.]+)$/);
@@ -95,7 +95,7 @@ function ImageCard({
     cardWidth?: number;
     cardHeight?: number;
 }) {
-    const { settings, selectedImages, setSelectedImages, setPreviewingVideo } = useGalleryContext();
+    const { settings, selectedImages, setSelectedImages, multiSelectMode, setMultiSelectMode, setPreviewingVideo } = useGalleryContext();
     const dragRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [dragging, setDragging] = useState(false);
@@ -166,20 +166,21 @@ function ImageCard({
         }
     }, [currentImage.type, settings.autoPlayVideos, videoInView, currentImage.url]);
 
-    // Use ctrlKey from click event, not global state
+    const isSelected = selectedImages.includes(currentImage.url);
+    const toggleSelected = () => {
+        setSelectedImages((oldSelectedImages) => {
+            if (oldSelectedImages.includes(currentImage.url)) {
+                return oldSelectedImages.filter((selectedImage) => selectedImage != currentImage.url);
+            }
+            return [...oldSelectedImages, currentImage.url];
+        });
+    };
+
     const handleCardClick = (event: React.MouseEvent) => {
-        if (event.ctrlKey || event.metaKey) {
-            // The click dont stop
+        if (multiSelectMode || event.ctrlKey || event.metaKey) {
             event.stopPropagation();
             event.preventDefault();
-
-            setSelectedImages((oldSelectedImages) => {
-                if (oldSelectedImages.includes(currentImage.url)) {
-                    return [...oldSelectedImages.filter((selectedImage) => selectedImage != currentImage.url)];
-                } else {
-                    return [...oldSelectedImages, currentImage.url];
-                }
-            });
+            toggleSelected();
         } else {
             setSelectedImages([]);
         }
@@ -230,10 +231,39 @@ function ImageCard({
                 alignItems: "center",
                 position: "relative",
                 cursor: 'grab',
-                boxShadow: selectedImages.includes(currentImage.url) ? '0 0 0 3px #1890ff' : undefined,
+                boxShadow: isSelected ? '0 0 0 3px #1890ff' : undefined,
             }}
             onClick={handleCardClick}
         >
+            <div
+                title={multiSelectMode ? 'Select media' : 'Enable multi select'}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                }}
+                style={{
+                    position: 'absolute',
+                    top: 8,
+                    left: 8,
+                    zIndex: 5,
+                    display: 'inline-flex',
+                    width: 24,
+                    height: 24,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 4,
+                    background: multiSelectMode || isSelected ? 'rgba(22, 119, 255, 0.92)' : 'rgba(0, 0, 0, 0.52)',
+                    border: '1px solid rgba(255, 255, 255, 0.42)',
+                }}
+            >
+                <Checkbox
+                    checked={isSelected}
+                    onChange={() => {
+                        if (!multiSelectMode) setMultiSelectMode(true);
+                        toggleSelected();
+                    }}
+                />
+            </div>
             <div
                 title={currentImage.type === 'media' ? 'Video' : currentImage.type === 'image' ? 'Image' : currentImage.type}
                 style={{
@@ -265,7 +295,7 @@ function ImageCard({
                     style={{
                         position: 'absolute',
                         top: 8,
-                        left: 8,
+                        left: 38,
                         zIndex: 3,
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -376,7 +406,13 @@ function ImageCard({
                     src={`${BASE_PATH}${currentImage.url}`}
                     loading="lazy"
                     // preview={false}
-                    onClick={() => {
+                    onClick={(event) => {
+                        if (multiSelectMode) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            toggleSelected();
+                            return;
+                        }
                         // Ensure any leftover media preview state is cleared so this opens as an image
                         try { setPreviewingVideo(undefined); } catch { }
                         onPreviewOpen?.(currentImage, compactItems);
@@ -390,7 +426,13 @@ function ImageCard({
             </>) : currentImage.type === "audio" ? (<>
                 <div
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}
-                    onClick={() => {
+                    onClick={(event) => {
+                        if (multiSelectMode) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            toggleSelected();
+                            return;
+                        }
                         try { setPreviewingVideo(undefined); } catch { }
                         onPreviewOpen?.(currentImage, compactItems);
                         document.getElementById(currentImage.url)?.click();
@@ -410,7 +452,13 @@ function ImageCard({
                     />
                 </div>
             </>) : currentImage.type === "3d" ? (
-                <ImageCard3DThumbnail image={currentImage as any} cardWidth={cardWidth} onClick={() => {
+                <ImageCard3DThumbnail image={currentImage as any} cardWidth={cardWidth} onClick={(event) => {
+                    if (multiSelectMode) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        toggleSelected();
+                        return;
+                    }
                     try { setPreviewingVideo(undefined); } catch { }
                     onPreviewOpen?.(currentImage, compactItems);
                     document.getElementById(currentImage.url)?.click();
@@ -431,7 +479,13 @@ function ImageCard({
                     muted={true}
                     preload="metadata"
                     onLoadedMetadata={(event) => setVideoDuration(event.currentTarget.duration)}
-                    onClick={() => {
+                    onClick={(event) => {
+                        if (multiSelectMode) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            toggleSelected();
+                            return;
+                        }
                         onPreviewOpen?.(currentImage, compactItems);
                         onVideoClick(currentImage);
                         document.getElementById(currentImage.url)?.click();

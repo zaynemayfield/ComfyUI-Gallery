@@ -1,13 +1,43 @@
 import { useEffect, useRef, useState } from 'react';
-import { Flex, AutoComplete, Button, Segmented, message, Popconfirm, Tooltip } from 'antd';
-import { CloseOutlined, CloseSquareFilled, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
+import { Flex, AutoComplete, Button, Modal, Segmented, message, Popconfirm, Tooltip, Tree } from 'antd';
+import type { DataNode } from 'antd/es/tree';
+import { CloseOutlined, CloseSquareFilled, DeleteOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
 import Typography from 'antd/es/typography/Typography';
-import JSZip from 'jszip';
-import FileSaver from 'file-saver';
-import { BASE_PATH, ComfyAppApi } from './ComfyAppApi';
+import { ComfyAppApi } from './ComfyAppApi';
 import GalleryFolderBar from './GalleryFolderBar';
+
+const buildFolderTreeData = (folderKeys: string[]): DataNode[] => {
+    const roots: DataNode[] = [];
+    const nodeMap = new Map<string, DataNode>();
+    folderKeys
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach(folderKey => {
+            const parts = folderKey.split(/[\\/]+/).filter(Boolean);
+            let currentPath = '';
+            let siblings = roots;
+            parts.forEach(part => {
+                currentPath = currentPath ? `${currentPath}/${part}` : part;
+                let node = nodeMap.get(currentPath);
+                if (!node) {
+                    node = { key: currentPath, title: part, children: [] };
+                    nodeMap.set(currentPath, node);
+                    siblings.push(node);
+                }
+                siblings = (node.children ??= []);
+            });
+        });
+    return roots;
+};
+
+const getGalleryRelativePath = (url: string) => {
+    const prefix = '/static_gallery/';
+    return url.startsWith(prefix) ? url.slice(prefix.length) : url;
+};
+
+const getFileNameFromPath = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() || path;
 
 const GalleryHeader = () => {
     const {
@@ -22,7 +52,11 @@ const GalleryHeader = () => {
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
         selectedImages, setSelectedImages,
+        multiSelectMode, setMultiSelectMode,
         settings, setSettings,
+        data,
+        currentFolder,
+        runAsync,
     } = useGalleryContext();
 
     const [search, setSearch] = useState("");
@@ -41,9 +75,9 @@ const GalleryHeader = () => {
     });
     const dragCounter = useRef(0);
 
-    const [downloading, setDownloading] = useState(false);
-    const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [moveModalOpen, setMoveModalOpen] = useState(false);
+    const [moveTargetFolder, setMoveTargetFolder] = useState<string | undefined>(currentFolder);
+    const [bulkMoving, setBulkMoving] = useState(false);
 
     // Show close button only when dragging
     useEffect(() => {
@@ -87,6 +121,61 @@ const GalleryHeader = () => {
         const nextSort = nameSort === 'Name ↑' ? 'Name ↓' : 'Name ↑';
         setNameSort(nextSort);
         setSortMethod(nextSort);
+    };
+
+    const folderTreeData = buildFolderTreeData(Object.keys(data?.folders ?? {}));
+
+    const clearMultiSelect = () => {
+        setSelectedImages([]);
+        setMultiSelectMode(false);
+    };
+
+    const bulkDeleteSelected = async () => {
+        let deleted = 0;
+        for (const url of selectedImages) {
+            try {
+                const success = await ComfyAppApi.deleteImage(url);
+                if (success) deleted++;
+            } catch (e) {
+                console.error('Failed to delete image:', url, e);
+            }
+        }
+        if (deleted > 0) {
+            message.success(`Deleted ${deleted} file${deleted === 1 ? '' : 's'}.`);
+            clearMultiSelect();
+            runAsync();
+        } else {
+            message.error('Failed to delete selected files.');
+        }
+    };
+
+    const bulkMoveSelected = async () => {
+        if (!moveTargetFolder) return;
+        setBulkMoving(true);
+        try {
+            let moved = 0;
+            for (const url of selectedImages) {
+                const sourcePath = getGalleryRelativePath(url);
+                const fileName = getFileNameFromPath(sourcePath);
+                const targetPath = `${moveTargetFolder}/${fileName}`;
+                if (sourcePath === targetPath) {
+                    moved++;
+                    continue;
+                }
+                const success = await ComfyAppApi.moveImage(sourcePath, targetPath);
+                if (success) moved++;
+            }
+            if (moved > 0) {
+                message.success(`Moved ${moved} file${moved === 1 ? '' : 's'}.`);
+                setMoveModalOpen(false);
+                clearMultiSelect();
+                runAsync();
+            } else {
+                message.error('Failed to move selected files.');
+            }
+        } finally {
+            setBulkMoving(false);
+        }
     };
 
     return (
@@ -191,84 +280,6 @@ const GalleryHeader = () => {
                         value={settings.autoPlayVideos}
                         onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
                     />
-            {selectedImages && selectedImages.length > 0 && (
-                <>
-                    <Popconfirm
-                        title="Download Selected Images"
-                        description={`Are you sure you want to download ${selectedImages.length} selected image(s)?`}
-                        onConfirm={async () => {
-                            setDownloading(true);
-                            try {
-                                const zip = new JSZip();
-                                await Promise.all(selectedImages.map(async (url) => {
-                                    try {
-                                        const fetchUrl = url.startsWith('http') ? url : `${BASE_PATH}${url}`;
-                                        const response = await fetch(fetchUrl);
-                                        const blob = await response.blob();
-                                        const filename = url.split('/').pop() || 'image';
-                                        zip.file(filename, blob);
-                                    } catch (e) {
-                                        console.error('Failed to fetch image:', url, e);
-                                    }
-                                }));
-                                const content = await zip.generateAsync({ type: 'blob' });
-                                FileSaver.saveAs(content, 'comfy-ui-gallery-images.zip');
-                            } catch (error) {
-                                message.error('Failed to download images.');
-                            } finally {
-                                setDownloading(false);
-                            }
-                        }}
-                        onCancel={() => message.info('Download cancelled')}
-                        okText={`Download (${selectedImages.length})`}
-                        cancelText="Cancel"
-                        okButtonProps={{ loading: downloading }}
-                    >
-                        <Button
-                            type="primary"
-                            loading={downloading}
-                            style={{ marginLeft: 8 }}
-                            className="selectedImagesActionButton"
-                        >
-                            Download Selected
-                        </Button>
-                    </Popconfirm>
-                    <Popconfirm
-                        title="Delete Selected Images"
-                        description={`Are you sure you want to delete ${selectedImages.length} selected image(s)? This cannot be undone.`}
-                        onConfirm={async () => {
-                            let deleted = 0;
-                            for (const url of selectedImages) {
-                                try {
-                                    const success = await ComfyAppApi.deleteImage(url);
-                                    if (success) deleted++;
-                                    await new Promise(res => setTimeout(res, 50));
-                                } catch (e) {
-                                    console.error('Failed to delete image:', url, e);
-                                }
-                            }
-                            if (deleted > 0) {
-                                message.success(`Deleted ${deleted} image(s).`);
-                                setSelectedImages([]);
-                            } else {
-                                message.error(`Failed to delete images.`);
-                            }
-                        }}
-                        onCancel={() => message.info('Delete cancelled')}
-                        okText={`Delete (${selectedImages.length})`}
-                        cancelText="Cancel"
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button
-                            danger
-                            style={{ marginLeft: 8 }}
-                            className="selectedImagesActionButton"
-                        >
-                            Delete Selected
-                        </Button>
-                    </Popconfirm>
-                </>
-            )}
             {showClose && (
                 <div
                     style={{ 
@@ -349,7 +360,72 @@ const GalleryHeader = () => {
                     </Button>
                 </Flex>
             </Flex>
+            {(multiSelectMode || selectedImages.length > 0) && (
+                <Flex
+                    align="center"
+                    gap={8}
+                    wrap="wrap"
+                    className="selectedImagesActionButton"
+                    style={{
+                        minHeight: 36,
+                        padding: '4px 8px',
+                        borderTop: '1px solid #f0f0f0',
+                        borderBottom: '1px solid #f0f0f0',
+                        background: '#fafafa',
+                    }}
+                >
+                    <Typography style={{ fontSize: 13, fontWeight: 600, color: '#444' }}>
+                        {selectedImages.length} selected
+                    </Typography>
+                    <Popconfirm
+                        title="Delete selected files"
+                        description={`Delete ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'}? This cannot be undone.`}
+                        onConfirm={bulkDeleteSelected}
+                        okText={`Delete (${selectedImages.length})`}
+                        cancelText="Cancel"
+                        okButtonProps={{ danger: true, disabled: selectedImages.length === 0 }}
+                    >
+                        <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                            disabled={selectedImages.length === 0}
+                        >
+                            Delete
+                        </Button>
+                    </Popconfirm>
+                    <Button
+                        icon={<FolderOpenOutlined />}
+                        disabled={selectedImages.length === 0}
+                        onClick={() => {
+                            setMoveTargetFolder(currentFolder);
+                            setMoveModalOpen(true);
+                        }}
+                    >
+                        Move
+                    </Button>
+                    <Button onClick={clearMultiSelect}>
+                        Clear
+                    </Button>
+                </Flex>
+            )}
             {showFolderBar && <GalleryFolderBar />}
+            <Modal
+                open={moveModalOpen}
+                title={`Move ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'}`}
+                okText="Move"
+                okButtonProps={{ disabled: !moveTargetFolder || selectedImages.length === 0, loading: bulkMoving }}
+                onOk={bulkMoveSelected}
+                onCancel={() => setMoveModalOpen(false)}
+            >
+                <Tree
+                    blockNode
+                    defaultExpandAll
+                    selectedKeys={moveTargetFolder ? [moveTargetFolder] : []}
+                    treeData={folderTreeData}
+                    onSelect={keys => setMoveTargetFolder(String(keys[0] ?? ''))}
+                    style={{ maxHeight: 360, overflow: 'auto' }}
+                />
+            </Modal>
         </Flex>
     );
 };
