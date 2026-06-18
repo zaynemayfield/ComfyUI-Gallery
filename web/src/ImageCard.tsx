@@ -395,10 +395,12 @@ function ImageCard({
                 <Image
                     id={currentImage.url}
                     style={{
-                        objectFit: "cover",
-                        ...(settings.imageThumbFit === 'height'
-                            ? { maxHeight: cardHeight, width: 'auto', maxWidth: '100%' }
-                            : { maxWidth: cardWidth, width: '100%', height: 'auto' }),
+                        objectFit: "contain",
+                        width: '100%',
+                        height: '100%',
+                        maxWidth: cardWidth,
+                        maxHeight: cardHeight,
+                        background: '#f5f5f5',
                         userSelect: 'none',
                         cursor: 'grab',
                     }}

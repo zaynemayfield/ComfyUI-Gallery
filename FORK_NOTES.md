@@ -46,6 +46,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added scoped search across filename, metadata, positive prompt, negative prompt, model, and seed, and reorganized header sort/media/autoplay controls.
 - Added compact Off/On toggles for Compact and date dividers, matching the Autoplay control layout.
 - Suppressed date section rows during active search and reset the virtual grid when date section layout changes.
+- Moved preview position count to the upper right, separated Date Sections into its own control group, and changed image cards to contain full thumbnails.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.

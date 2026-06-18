@@ -597,6 +597,8 @@ const PreviewFrame = ({
     actionItems,
     currentFolder,
     folderKeys,
+    currentIndex,
+    totalCount,
     onDone,
 }: {
     children: React.ReactNode;
@@ -604,6 +606,8 @@ const PreviewFrame = ({
     actionItems: FileDetails[];
     currentFolder: string;
     folderKeys: string[];
+    currentIndex: number;
+    totalCount: number;
     onDone: () => void;
 }) => {
     const [metadataVisible, setMetadataVisible] = useState(false);
@@ -618,8 +622,31 @@ const PreviewFrame = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 10,
+                position: 'relative',
             }}
         >
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    zIndex: BASE_Z_INDEX + 140,
+                    minWidth: 54,
+                    height: 28,
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                    background: 'rgba(0, 0, 0, 0.66)',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    lineHeight: '22px',
+                    textAlign: 'center',
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                }}
+            >
+                {currentIndex + 1} / {totalCount}
+            </div>
             <div
                 style={{
                     maxHeight: 'calc(92vh - 58px)',
@@ -1101,6 +1128,8 @@ const GalleryImageGrid = () => {
                     actionItems={actionItems}
                     currentFolder={currentFolder}
                     folderKeys={folderKeys}
+                    currentIndex={info.current}
+                    totalCount={previewableImages.length}
                     onDone={handlePreviewActionDone}
                 >
                     {node}
@@ -1203,6 +1232,11 @@ const GalleryImageGrid = () => {
 
     return (
         <div id="imagesBox" style={{ width: '100%', height: '100%', position: 'relative', overflowX: 'hidden' }} ref={containerRef}>
+            <style>{`
+                .ant-image-preview-progress {
+                    display: none !important;
+                }
+            `}</style>
             {loading && (
                 <div style={{
                     position: 'absolute',
