@@ -33,6 +33,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added a loading indicator and delayed scroll handoff for date jumps that need additional media rows to render first.
 - Changed date jumps to use explicit row offsets and avoid remounting the grid when additional batches load.
 - Removed an obsolete grid child positioning override that caused preview cards to overlap in the virtualized media grid.
+- Synchronized AutoSizer measurements with media grid/card sizing before rendering to prevent first-load overlap at Medium and Large preview sizes.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point

@@ -133,8 +133,8 @@ const GalleryImageGrid = () => {
     const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
     const [pendingScrollTarget, setPendingScrollTarget] = useState<DateDividerRow | null>(null);
     const previewLayout = useMemo(
-        () => getPreviewLayout(gridSize.width, previewSize),
-        [gridSize.width, previewSize]
+        () => getPreviewLayout(autoSizer.width, previewSize),
+        [autoSizer.width, previewSize]
     );
     const imagesDetailsList = useMemo(() => {
         let list: FileDetails[] = getFolderMediaList(data, currentFolder);
@@ -161,7 +161,7 @@ const GalleryImageGrid = () => {
             });
             const result: FileDetails[] = [];
             Object.entries(grouped).forEach(([date, items]) => {
-                const colCount = Math.max(1, gridSize.columnCount || 1);
+                const colCount = Math.max(1, previewLayout.columnCount || 1);
                 for (let i = 0; i < colCount; i++) {
                     result.push({ name: date, type: 'divider' } as FileDetails);
                 }
@@ -183,7 +183,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, compactOutputs, gridSize.columnCount, settings.showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, compactOutputs, previewLayout.columnCount, settings.showDateDivider]);
     const visibleImagesDetailsList = useMemo(
         () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
         [imagesDetailsList, visibleMediaLimit]
@@ -323,7 +323,7 @@ const GalleryImageGrid = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'flex-start',
-                        width: gridSize.width,
+                        width: autoSizer.width,
                         gridColumn: `span ${previewLayout.columnCount}`,
                         background: 'transparent',
                         padding: 0,
@@ -441,7 +441,7 @@ const GalleryImageGrid = () => {
                 />
             </div>
         );
-    }, [gridSize.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow, pendingScrollTarget]);
+    }, [autoSizer.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow, pendingScrollTarget]);
 
     useEffect(() => {
         const { width, height } = autoSizer;
@@ -660,6 +660,7 @@ const GalleryImageGrid = () => {
                         {({ width, height }) => {
                             if (autoSizer.width !== width || autoSizer.height !== height) {
                                 setTimeout(() => setAutoSizer({ width, height }), 0);
+                                return <div style={{ width, height }} />;
                             }
                             const layout = getPreviewLayout(width, previewSize);
                             return (
