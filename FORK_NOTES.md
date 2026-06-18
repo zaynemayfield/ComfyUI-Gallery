@@ -17,6 +17,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Updated folder selection so parent folders show media from their descendant folders.
 - Added a folder actions row for the current folder with create, rename, move, and delete controls guarded by backend path checks.
 - Added clear separators between folder action groups so create, rename, move, and delete controls are easier to scan.
+- Replaced the folder move text input with a tree picker that previews the selected destination before moving.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point

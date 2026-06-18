@@ -1,10 +1,21 @@
-import { Button, Flex, Input, Popconfirm, Tooltip, Typography, message } from 'antd';
+import { Button, Flex, Input, Modal, Popconfirm, Tree, Tooltip, Typography, message } from 'antd';
 import { BranchesOutlined, DeleteOutlined, EditOutlined, FolderAddOutlined, FolderOpenOutlined, FolderOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useGalleryContext } from './GalleryContext';
-import { getChildFolders, getFolderLabel, getRootFolders } from './galleryFolderUtils';
+import { getChildFolders, getFolderKeys, getFolderLabel, getRootFolders } from './galleryFolderUtils';
 import { ComfyAppApi } from './ComfyAppApi';
+
+const ROOT_TREE_KEY = "__gallery_root__";
+
+type MoveTreeNode = {
+    title: ReactNode;
+    key: string;
+    icon?: ReactNode;
+    children?: MoveTreeNode[];
+    disabled?: boolean;
+    selectable?: boolean;
+};
 
 const chipStyle = (active: boolean): CSSProperties => ({
     height: 24,
@@ -55,15 +66,144 @@ const FolderButton = ({
     </Button>
 );
 
+const joinFolderPath = (parentPath: string, childName: string) => (
+    parentPath ? `${parentPath}/${childName}` : childName
+);
+
+const treeKeyToFolderPath = (key: string) => (
+    key === ROOT_TREE_KEY ? "" : key
+);
+
+const folderPathToTreeKey = (folderPath: string | null) => (
+    folderPath ? folderPath : ROOT_TREE_KEY
+);
+
+const isDescendantFolder = (folderPath: string, parentPath: string) => (
+    Boolean(parentPath) && folderPath.startsWith(`${parentPath}/`)
+);
+
+const getAncestorTreeKeys = (folderPath: string | null) => {
+    if (folderPath === null) return [ROOT_TREE_KEY];
+    const parts = folderPath.split('/').filter(Boolean);
+    const keys = [ROOT_TREE_KEY];
+    for (let index = 0; index < parts.length; index++) {
+        keys.push(parts.slice(0, index + 1).join('/'));
+    }
+    return keys;
+};
+
+const buildMoveTreeData = (
+    folderKeys: string[],
+    currentFolder: string,
+    selectedTargetParent: string | null,
+    parentFolder: string,
+) => {
+    const currentFolderName = getFolderLabel(currentFolder);
+    const folderSet = new Set(folderKeys);
+    const nodeMap = new Map<string, MoveTreeNode>();
+    const targetPath = selectedTargetParent === null ? null : joinFolderPath(selectedTargetParent, currentFolderName);
+    const selectedTargetIsValid = selectedTargetParent !== null
+        && selectedTargetParent !== parentFolder
+        && selectedTargetParent !== currentFolder
+        && !isDescendantFolder(selectedTargetParent, currentFolder)
+        && !folderSet.has(targetPath ?? "");
+
+    const makeTitle = (label: string, folderPath: string) => {
+        const invalidTarget = folderPath === currentFolder || isDescendantFolder(folderPath, currentFolder);
+        const sameParent = folderPath === parentFolder;
+        const wouldConflict = folderSet.has(joinFolderPath(folderPath, currentFolderName));
+        const disabled = invalidTarget || sameParent || wouldConflict;
+
+        return {
+            disabled,
+            title: (
+                <span style={{ opacity: disabled ? 0.45 : 1 }}>
+                    {label}
+                </span>
+            ),
+        };
+    };
+
+    const rootConflict = folderSet.has(currentFolderName);
+    const rootDisabled = parentFolder === "" || rootConflict;
+    const rootNode: MoveTreeNode = {
+        title: <span style={{ opacity: rootDisabled ? 0.45 : 1 }}>output</span>,
+        key: ROOT_TREE_KEY,
+        icon: <FolderOutlined />,
+        children: [],
+        disabled: rootDisabled,
+    };
+
+    nodeMap.set(ROOT_TREE_KEY, rootNode);
+
+    folderKeys.forEach(fullPath => {
+        const segments = fullPath.split('/').filter(Boolean);
+        let currentPath = "";
+
+        segments.forEach((segment, index) => {
+            currentPath = index === 0 ? segment : `${currentPath}/${segment}`;
+            if (nodeMap.has(currentPath)) return;
+
+            const titleState = makeTitle(segment, currentPath);
+            const newNode: MoveTreeNode = {
+                title: titleState.title,
+                key: currentPath,
+                icon: <FolderOutlined />,
+                children: [],
+                disabled: titleState.disabled,
+            };
+
+            nodeMap.set(currentPath, newNode);
+            const parentPath = index === 0 ? ROOT_TREE_KEY : segments.slice(0, index).join('/');
+            nodeMap.get(parentPath)?.children?.push(newNode);
+        });
+    });
+
+    if (selectedTargetIsValid) {
+        const previewParentKey = folderPathToTreeKey(selectedTargetParent);
+        nodeMap.get(previewParentKey)?.children?.push({
+            title: (
+                <span
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        color: '#1677ff',
+                        background: 'rgba(22, 119, 255, 0.12)',
+                        border: '1px dashed rgba(22, 119, 255, 0.55)',
+                    }}
+                >
+                    <RetweetOutlined />
+                    {currentFolderName}
+                </span>
+            ),
+            key: `__move_preview__/${targetPath}`,
+            icon: <FolderOpenOutlined />,
+            selectable: false,
+            disabled: true,
+        });
+    }
+
+    return {
+        treeData: [rootNode],
+        selectedTargetIsValid,
+        targetPath,
+    };
+};
+
 const GalleryFolderBar = () => {
     const { data, currentFolder, setCurrentFolder, setSelectedImages, runAsync } = useGalleryContext();
     const [showActions, setShowActions] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
     const [renameValue, setRenameValue] = useState("");
-    const [moveTarget, setMoveTarget] = useState("");
+    const [moveModalOpen, setMoveModalOpen] = useState(false);
+    const [moveTargetParent, setMoveTargetParent] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
     const rootFolders = useMemo(() => getRootFolders(data), [data]);
+    const folderKeys = useMemo(() => getFolderKeys(data), [data]);
     const childFolders = useMemo(() => getChildFolders(data, currentFolder), [data, currentFolder]);
     const activeRoot = useMemo(() => currentFolder.split('/').filter(Boolean)[0] || currentFolder, [currentFolder]);
     const ancestorFolders = useMemo(() => {
@@ -87,8 +227,10 @@ const GalleryFolderBar = () => {
             await action();
             message.success(success);
             await refreshFolders(nextFolder);
+            return true;
         } catch (error: any) {
             message.error(error?.message || "Folder action failed");
+            return false;
         } finally {
             setBusy(false);
         }
@@ -96,6 +238,39 @@ const GalleryFolderBar = () => {
 
     const parentFolder = currentFolder.split('/').slice(0, -1).join('/');
     const isRootFolder = currentFolder === activeRoot;
+    const moveTree = useMemo(
+        () => buildMoveTreeData(folderKeys, currentFolder, moveTargetParent, parentFolder),
+        [folderKeys, currentFolder, moveTargetParent, parentFolder]
+    );
+    const moveExpandedKeys = useMemo(
+        () => Array.from(new Set([
+            ...getAncestorTreeKeys(currentFolder),
+            ...getAncestorTreeKeys(moveTargetParent),
+        ])),
+        [currentFolder, moveTargetParent]
+    );
+
+    const openMoveDialog = () => {
+        setMoveTargetParent(null);
+        setMoveModalOpen(true);
+    };
+
+    const closeMoveDialog = () => {
+        setMoveModalOpen(false);
+        setMoveTargetParent(null);
+    };
+
+    const handleMoveFolder = async () => {
+        if (!moveTree.selectedTargetIsValid || moveTargetParent === null) return;
+        const moved = await runFolderAction(
+            async () => {
+                await ComfyAppApi.moveFolder(currentFolder, moveTargetParent);
+            },
+            "Folder moved",
+            moveTree.targetPath ?? undefined
+        );
+        if (moved) closeMoveDialog();
+    };
 
     if (!rootFolders.length) return null;
 
@@ -230,26 +405,11 @@ const GalleryFolderBar = () => {
                         Rename
                     </Button>
                     <ActionDivider />
-                    <Input
-                        size="small"
-                        value={moveTarget}
-                        onChange={event => setMoveTarget(event.target.value)}
-                        placeholder="Move into folder"
-                        style={{ width: 145 }}
-                    />
                     <Button
                         size="small"
                         icon={<RetweetOutlined />}
-                        loading={busy}
                         disabled={isRootFolder}
-                        onClick={() => runFolderAction(
-                            async () => {
-                                await ComfyAppApi.moveFolder(currentFolder, moveTarget);
-                                setMoveTarget("");
-                            },
-                            "Folder moved",
-                            moveTarget ? `${moveTarget}/${getFolderLabel(currentFolder)}` : getFolderLabel(currentFolder)
-                        )}
+                        onClick={openMoveDialog}
                     >
                         Move
                     </Button>
@@ -271,6 +431,56 @@ const GalleryFolderBar = () => {
                     </Popconfirm>
                 </Flex>
             )}
+            <Modal
+                title={`Move ${getFolderLabel(currentFolder)}`}
+                open={moveModalOpen}
+                onCancel={closeMoveDialog}
+                onOk={handleMoveFolder}
+                okText="Move"
+                okButtonProps={{ disabled: !moveTree.selectedTargetIsValid, loading: busy }}
+                cancelButtonProps={{ disabled: busy }}
+                width={520}
+                destroyOnHidden
+            >
+                <Flex vertical gap={10}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {currentFolder}
+                    </Typography.Text>
+                    <div
+                        style={{
+                            maxHeight: 340,
+                            overflow: 'auto',
+                            padding: 8,
+                            border: '1px solid rgba(127, 127, 127, 0.18)',
+                            borderRadius: 4,
+                            background: 'rgba(127, 127, 127, 0.04)',
+                        }}
+                    >
+                        <Tree.DirectoryTree
+                            showIcon
+                            showLine
+                            blockNode
+                            defaultExpandedKeys={moveExpandedKeys}
+                            selectedKeys={moveTargetParent === null ? [] : [folderPathToTreeKey(moveTargetParent)]}
+                            treeData={moveTree.treeData}
+                            expandAction={false}
+                            onSelect={(keys) => {
+                                if (keys.length > 0) setMoveTargetParent(treeKeyToFolderPath(String(keys[0])));
+                            }}
+                        />
+                    </div>
+                    {moveTargetParent !== null && (
+                        <Typography.Text
+                            type={moveTree.selectedTargetIsValid ? undefined : "danger"}
+                            style={{ fontSize: 12 }}
+                        >
+                            {moveTree.selectedTargetIsValid
+                                ? `${currentFolder} -> ${moveTree.targetPath}`
+                                : "Choose a different destination. A folder cannot move into itself, stay in the same parent, or overwrite an existing folder."}
+                        </Typography.Text>
+                    )}
+                </Flex>
+            </Modal>
         </Flex>
     );
 };
