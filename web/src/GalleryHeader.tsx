@@ -38,6 +38,7 @@ const getGalleryRelativePath = (url: string) => {
 };
 
 const getFileNameFromPath = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() || path;
+const getDateString = (value: string | string[]) => Array.isArray(value) ? value[0] : value;
 
 const GalleryHeader = () => {
     const {
@@ -45,7 +46,7 @@ const GalleryHeader = () => {
         setSearchFileName,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
-        setDateRange,
+        dateRange, setDateRange,
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
         compactOutputs, setCompactOutputs,
@@ -255,36 +256,44 @@ const GalleryHeader = () => {
                         value={mediaFilter}
                         onChange={value => setMediaFilter(value as any)}
                     />
-                    <DatePicker.RangePicker
-                        size="middle"
-                        allowClear
-                        placeholder={['Start date', 'End date']}
-                        onChange={(_, dateStrings) => {
-                            setDateRange([
-                                dateStrings[0] || null,
-                                dateStrings[1] || null,
-                            ]);
-                        }}
-                        style={{ width: 230 }}
-                    />
-                    <Segmented
-                        options={[
-                            { label: 'Small', value: 'small' },
-                            { label: 'Medium', value: 'medium' },
-                            { label: 'Large', value: 'large' },
-                        ]}
-                        value={previewSize}
-                        onChange={value => setPreviewSize(value as any)}
-                    />
-                    <Segmented
-                        options={[
-                            { label: '20', value: 20 },
-                            { label: '40', value: 40 },
-                            { label: '60', value: 60 },
-                        ]}
-                        value={mediaBatchSize}
-                        onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
-                    />
+                    <Flex vertical gap={2}>
+                        <DatePicker
+                            size="small"
+                            allowClear
+                            placeholder="Start Date"
+                            onChange={(_, dateString) => setDateRange([getDateString(dateString) || null, dateRange[1]])}
+                            style={{ width: 118 }}
+                        />
+                        <DatePicker
+                            size="small"
+                            allowClear
+                            placeholder="End Date"
+                            onChange={(_, dateString) => setDateRange([dateRange[0], getDateString(dateString) || null])}
+                            style={{ width: 118 }}
+                        />
+                    </Flex>
+                    <Flex vertical gap={2}>
+                        <Segmented
+                            size="small"
+                            options={[
+                                { label: 'Small', value: 'small' },
+                                { label: 'Medium', value: 'medium' },
+                                { label: 'Large', value: 'large' },
+                            ]}
+                            value={previewSize}
+                            onChange={value => setPreviewSize(value as any)}
+                        />
+                        <Segmented
+                            size="small"
+                            options={[
+                                { label: '20', value: 20 },
+                                { label: '40', value: 40 },
+                                { label: '60', value: 60 },
+                            ]}
+                            value={mediaBatchSize}
+                            onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
+                        />
+                    </Flex>
                     <Tooltip title="Group related outputs with the same filename, including -audio variants, into one browsable card." placement="bottom">
                         <Button
                             size="middle"
@@ -296,8 +305,8 @@ const GalleryHeader = () => {
                     </Tooltip>
                     <Segmented
                         options={[
-                            { label: 'Autoplay Off', value: false },
-                            { label: 'Autoplay On', value: true },
+                            { label: 'Off', value: false },
+                            { label: 'On', value: true },
                         ]}
                         value={settings.autoPlayVideos}
                         onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}

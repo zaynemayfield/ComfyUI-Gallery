@@ -1,7 +1,7 @@
 # folder_scanner.py
 import os
 from datetime import datetime
-from .metadata_extractor import buildMetadata  # Import metadata extractor
+from .metadata_extractor import buildMetadata, get_size  # Import metadata extractor
 
 # Default extensions include images, media, audio, and 3D
 DEFAULT_EXTENSIONS = [
@@ -58,7 +58,14 @@ def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_exte
                         url_path = url_path.replace("\\", "/")
 
                         # Default metadata and type detection
-                        metadata = {}
+                        metadata = {
+                            "fileinfo": {
+                                "filename": full_path,
+                                "resolution": "",
+                                "date": date_str,
+                                "size": str(get_size(full_path)),
+                            }
+                        }
                         file_type = "unknown"
                         ext = os.path.splitext(lower_entry)[1]
 
