@@ -2,7 +2,7 @@
 
 All notable changes in this fork are summarized here. Detailed implementation notes are in [FORK_NOTES.md](FORK_NOTES.md).
 
-## 2.8.0 - 2026-06-18
+## 2.9.0 - 2026-06-18
 
 ### Added
 
@@ -31,6 +31,8 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Settings modal only contains advanced options.
 - Image cards fit full images instead of cropping.
 - Modal layout is constrained to the viewport to avoid a page-level scrollbar.
+- Full raw metadata loads on demand from the preview panel instead of being sent with every gallery list item.
+- Repeat gallery refreshes use a lightweight persistent index and compressed responses.
 
 ### Security
 

@@ -1,6 +1,6 @@
 # ComfyUI Gallery
 
-A fast, practical media gallery for ComfyUI outputs. Browse images, videos, audio, and 3D files directly inside ComfyUI, inspect metadata, organize folders, and manage bulk cleanup without leaving the workflow UI.
+A fast media gallery for ComfyUI outputs. Browse images, videos, audio, and 3D files directly inside ComfyUI, search generation metadata, group related outputs, organize folders, and clean up media without leaving the workflow UI.
 
 This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://github.com/PanicTitan/ComfyUI-Gallery). The original project is MIT licensed; the original copyright notice remains in [LICENSE](LICENSE). Fork-specific changes are tracked in [FORK_NOTES.md](FORK_NOTES.md).
 
@@ -9,13 +9,12 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 ## Why Use It
 
 - Opens from the ComfyUI toolbar instead of a floating overlay button.
-- Handles image and video-heavy output folders without forcing everything to load at once.
+- Handles image and video-heavy output folders with lazy batches, cached thumbnails, compressed responses, and a persistent media index.
 - Groups related LTX-style outputs such as `file.mp4`, `file-audio.mp4`, and `file.png`.
 - Searches filenames and metadata, including positive prompt, negative prompt, model, and seed.
-- Shows image metadata and raw metadata in the main preview overlay.
+- Shows parsed metadata quickly and lazy-loads raw metadata only when requested.
 - Lets you create, rename, move, and delete folders from the gallery.
 - Supports multi-select bulk move/delete with compact-group confirmation.
-- Uses cached video thumbnails and a server-side media index for faster browsing.
 - Keeps gallery access scoped to ComfyUI's output directory for safer public distribution.
 
 ## Feature Highlights
@@ -27,7 +26,7 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 | Compact mode | Groups related media outputs and lets users cycle through grouped files |
 | Preview | Fit-to-screen media, video controls, persistent mute/volume, loop, metadata panel, raw metadata |
 | File actions | Delete, move, rename, folder create/rename/move/delete, bulk delete/move |
-| Performance | Virtualized grid, 20/40/60 loading batches, cached video thumbnails, persistent metadata index |
+| Performance | Virtualized grid, 20/40/60 loading batches, cached video thumbnails, compressed gallery responses, persistent metadata index |
 | Safety | Output-directory path boundary checks, no symlink following for static gallery route |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for a fuller walkthrough.
@@ -59,6 +58,16 @@ Restart ComfyUI after installation or updates.
 5. Click a card to preview media, inspect metadata, rename, move, or delete.
 6. Use checkboxes for multi-select bulk move/delete.
 
+## What This Fork Adds
+
+This fork keeps the original gallery concept and focuses on making it practical for public, media-heavy ComfyUI installs:
+
+- Toolbar-first entry point that matches other ComfyUI tools.
+- Compact mode for workflows that output image/video/audio variants with related filenames.
+- Metadata search that can target prompts, model names, seeds, or the full metadata text.
+- Faster refreshes through a server-side media index and lightweight gallery payloads.
+- File-management actions with backend path validation scoped to ComfyUI's output directory.
+
 ## Important Safety Notes
 
 The gallery can delete, rename, and move files inside the configured ComfyUI output path. Treat those actions as destructive.
@@ -68,6 +77,15 @@ This fork rejects absolute paths and paths that escape the ComfyUI output direct
 Do not expose a ComfyUI instance with file-management extensions to untrusted networks without access controls.
 
 See [SECURITY.md](SECURITY.md) for reporting and deployment guidance.
+
+## Performance Notes
+
+The first scan of a large output folder builds a local server-side index. Later refreshes reuse cached metadata for unchanged files, send a smaller compressed gallery list, and load full raw metadata only when a preview metadata panel requests it.
+
+Generated cache folders are local implementation details and should not be committed:
+
+- `.gallery_index_cache`
+- `.thumbnail_cache`
 
 ## Settings
 
@@ -127,10 +145,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and release guidance.
 - Add `REGISTRY_ACCESS_TOKEN` before using the Comfy Registry publish workflow.
 - Run the build and Python compile checks.
 - Test install from a fresh `custom_nodes` clone.
+- Tag the release, for example `v2.9.0`, after final manual testing.
 
 See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for the full checklist.
 
 For launch prep, see [docs/PUBLICATION_PLAN.md](docs/PUBLICATION_PLAN.md).
+
+For copy-ready release notes, see [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
 
 ## Credits
 

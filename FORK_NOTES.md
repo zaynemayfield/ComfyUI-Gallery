@@ -60,6 +60,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Reworked the README for public fork distribution, including current usage, security notes, installation, development notes, and upstream credits.
 - Updated project metadata to point at this fork while preserving an upstream project link.
 - Added public-facing feature docs, demo script, release checklist, changelog, contribution guide, security policy, issue templates, and pull request template.
+- Prepared the fork for a `2.9.0` public release with aligned package metadata, copy-ready release notes, refreshed README positioning, a validation workflow, and updated release checklist guidance.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.

@@ -16,9 +16,9 @@ Use this checklist before making the repository public, publishing to Comfy Regi
 ## Metadata
 
 - [ ] `pyproject.toml` repository URL points to this fork.
-- [ ] `pyproject.toml` version is updated for the release.
+- [ ] `pyproject.toml` version is updated for the release, currently `2.9.0`.
 - [ ] `pyproject.toml` publisher ID is correct for Comfy Registry.
-- [ ] `web/package.json` version is either intentionally separate or aligned.
+- [ ] `web/package.json` version is aligned with the Python package version.
 - [ ] Registry token is configured as `REGISTRY_ACCESS_TOKEN` before running publish workflow.
 
 ## Build
@@ -58,6 +58,8 @@ python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_confi
 - [ ] Folder create, rename, move, delete work.
 - [ ] Bulk move and bulk delete work.
 - [ ] Path traversal and absolute path attempts are rejected.
+- [ ] Repeat refresh after first scan is noticeably faster than the first index-building scan.
+- [ ] Raw metadata still loads from the preview metadata panel.
 
 ## Announcement
 
@@ -65,4 +67,5 @@ python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_confi
 - [ ] Mention this is a fork of PanicTitan/ComfyUI-Gallery.
 - [ ] Highlight the safety boundary: ComfyUI output directory only.
 - [ ] Mention `ffmpeg` and `ffprobe` are recommended for video thumbnails.
+- [ ] Mention first scan builds a local index and later refreshes reuse it.
 - [ ] Ask users to file issues with ComfyUI version, browser, OS, and logs.

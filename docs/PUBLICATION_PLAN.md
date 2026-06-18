@@ -14,7 +14,7 @@ This is the practical launch list for making the fork appealing and easy to adop
 ## Recommended GitHub Setup
 
 - Add repository description:
-  - `Fast ComfyUI output gallery with metadata search, video thumbnails, folder actions, and bulk media management.`
+  - `Fast ComfyUI media gallery with metadata search, video thumbnails, compact related outputs, folder actions, and bulk media management.`
 - Add topics:
   - `comfyui`
   - `comfyui-custom-node`
@@ -22,6 +22,8 @@ This is the practical launch list for making the fork appealing and easy to adop
   - `metadata`
   - `image-browser`
   - `video-thumbnail`
+  - `bulk-actions`
+  - `comfyui-gallery`
 - Add the demo video to the README or release notes.
 - Enable GitHub private vulnerability reporting if available.
 - Add `REGISTRY_ACCESS_TOKEN` if publishing to Comfy Registry.
@@ -34,8 +36,8 @@ This is the practical launch list for making the fork appealing and easy to adop
 4. Tag the release, for example:
 
 ```bash
-git tag v2.8.0
-git push origin v2.8.0
+git tag v2.9.0
+git push origin v2.9.0
 ```
 
 5. Create a GitHub Release with:
@@ -44,6 +46,7 @@ git push origin v2.8.0
    - Safety notes.
    - Install command.
    - Known limitations.
+   - Link to [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 ## Nice To Have
 

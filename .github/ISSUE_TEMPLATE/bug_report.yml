@@ -28,7 +28,7 @@ body:
     id: commit
     attributes:
       label: Gallery version or commit
-      placeholder: "Example: 2.8.0 or commit hash"
+      placeholder: "Example: 2.9.0 or commit hash"
   - type: input
     id: comfyui
     attributes:

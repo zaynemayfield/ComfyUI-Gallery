@@ -1,0 +1,40 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile Python files
+        run: python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_config.py gallery_node.py metadata_extractor.py __init__.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        working-directory: web
+        run: npm install --no-package-lock
+
+      - name: Build frontend
+        working-directory: web
+        run: npm run build
+

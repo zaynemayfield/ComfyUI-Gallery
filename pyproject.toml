@@ -1,8 +1,9 @@
 [project]
 name = "ComfyUI-Gallery"
-description = "Fast ComfyUI output gallery with media browsing, metadata search, video thumbnails, folder actions, and bulk file management."
-version = "2.8.0"
+description = "Fast ComfyUI media gallery with metadata search, video thumbnails, compact related outputs, folder actions, and bulk file management."
+version = "2.9.0"
 license = {file = "LICENSE"}
+keywords = ["comfyui", "gallery", "metadata", "video", "thumbnails", "custom-node"]
 
 [project.urls]
 Repository = "https://github.com/zaynemayfield/ComfyUI-Gallery"
