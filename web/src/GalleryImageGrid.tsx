@@ -359,10 +359,16 @@ const PreviewActions = ({
 }) => {
     const [moveOpen, setMoveOpen] = useState(false);
     const [selectedFolder, setSelectedFolder] = useState<string | undefined>(currentImage.sourceFolder || currentFolder);
+    const [renameOpen, setRenameOpen] = useState(false);
+    const [renameValue, setRenameValue] = useState(getDefaultRenameValue(currentImage, actionItems.length > 1));
     const [busy, setBusy] = useState(false);
     const isCompactGroup = actionItems.length > 1;
     const treeData = useMemo(() => buildFolderTreeData(folderKeys), [folderKeys]);
     const itemLabel = isCompactGroup ? `${actionItems.length} compacted files` : currentImage.name;
+
+    useEffect(() => {
+        setRenameValue(getDefaultRenameValue(currentImage, isCompactGroup));
+    }, [currentImage.url, isCompactGroup]);
 
     const runBatchAction = async (label: string, action: (image: FileDetails) => Promise<boolean>) => {
         setBusy(true);
@@ -395,35 +401,17 @@ const PreviewActions = ({
         });
     };
 
-    const confirmRename = () => {
-        let renameValue = getDefaultRenameValue(currentImage, isCompactGroup);
-        Modal.confirm({
-            title: isCompactGroup ? 'Rename compacted files' : 'Rename file',
-            content: (
-                <Input
-                    autoFocus
-                    defaultValue={renameValue}
-                    placeholder={isCompactGroup ? 'New base name' : 'New name'}
-                    onChange={event => { renameValue = event.target.value; }}
-                    onPressEnter={event => {
-                        event.preventDefault();
-                    }}
-                />
-            ),
-            okText: 'Rename',
-            zIndex: BASE_Z_INDEX + 300,
-            onOk: async () => {
-                const nextValue = renameValue.trim();
-                if (!nextValue || /[\\/]/.test(nextValue)) {
-                    message.error('Use a single file name without slashes.');
-                    throw new Error('Invalid file name');
-                }
-                await runBatchAction('Renamed', image => ComfyAppApi.renameImage(
-                    image.url,
-                    buildRenamedFileName(image, nextValue, isCompactGroup)
-                ));
-            },
-        });
+    const confirmRename = async () => {
+        const nextValue = renameValue.trim();
+        if (!nextValue || /[\\/]/.test(nextValue)) {
+            message.error('Use a single file name without slashes.');
+            return;
+        }
+        await runBatchAction('Renamed', image => ComfyAppApi.renameImage(
+            image.url,
+            buildRenamedFileName(image, nextValue, isCompactGroup)
+        ));
+        setRenameOpen(false);
     };
 
     const confirmMove = () => {
@@ -457,16 +445,37 @@ const PreviewActions = ({
                     userSelect: 'none',
                 }}
             >
-                <Button danger icon={<DeleteOutlined />} loading={busy} onClick={confirmDelete} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                    Delete
+                <Button danger icon={<DeleteOutlined />} loading={busy} onMouseDown={event => event.stopPropagation()} onClick={confirmDelete} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none' }}>Delete</span>
                 </Button>
-                <Button icon={<FolderOpenOutlined />} loading={busy} onClick={() => setMoveOpen(true)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                    Move
+                <Button icon={<FolderOpenOutlined />} loading={busy} onMouseDown={event => event.stopPropagation()} onClick={() => setMoveOpen(true)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none' }}>Move</span>
                 </Button>
-                <Button icon={<EditOutlined />} loading={busy} onClick={confirmRename} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                    Rename
+                <Button icon={<EditOutlined />} loading={busy} onMouseDown={event => event.stopPropagation()} onClick={() => setRenameOpen(true)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none' }}>Rename</span>
                 </Button>
             </div>
+            <Modal
+                open={renameOpen}
+                zIndex={BASE_Z_INDEX + 300}
+                title={isCompactGroup ? 'Rename compacted files' : 'Rename file'}
+                okText="Rename"
+                okButtonProps={{ loading: busy }}
+                cancelButtonProps={{ disabled: busy }}
+                onOk={confirmRename}
+                onCancel={() => setRenameOpen(false)}
+            >
+                <Input
+                    autoFocus
+                    value={renameValue}
+                    placeholder={isCompactGroup ? 'New base name' : 'New name'}
+                    onChange={event => setRenameValue(event.target.value)}
+                    onPressEnter={event => {
+                        event.preventDefault();
+                        confirmRename();
+                    }}
+                />
+            </Modal>
             <Modal
                 open={moveOpen}
                 zIndex={BASE_Z_INDEX + 300}
