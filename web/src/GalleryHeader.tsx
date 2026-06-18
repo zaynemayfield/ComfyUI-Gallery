@@ -82,6 +82,19 @@ const GalleryHeader = () => {
     const [moveModalOpen, setMoveModalOpen] = useState(false);
     const [moveTargetFolder, setMoveTargetFolder] = useState<string | undefined>(currentFolder);
     const [bulkMoving, setBulkMoving] = useState(false);
+    const sortButtonBaseStyle = {
+        minWidth: 82,
+        borderColor: '#e5e5e5',
+        background: '#f5f5f5',
+        color: '#333',
+        boxShadow: 'none',
+    };
+    const sortButtonActiveStyle = {
+        background: '#fff',
+        borderColor: '#d9d9d9',
+        color: '#111',
+        fontWeight: 600,
+    };
 
     // Show close button only when dragging
     useEffect(() => {
@@ -253,17 +266,23 @@ const GalleryHeader = () => {
                         <Flex gap={4}>
                             <Button
                                 size="small"
-                                type={sortMethod === 'Newest' || sortMethod === 'Oldest' ? 'primary' : 'default'}
+                                type="default"
                                 onClick={toggleDateSort}
-                                style={{ minWidth: 82 }}
+                                style={{
+                                    ...sortButtonBaseStyle,
+                                    ...(sortMethod === 'Newest' || sortMethod === 'Oldest' ? sortButtonActiveStyle : {}),
+                                }}
                             >
                                 {dateSort} {dateSort === 'Newest' ? '↓' : '↑'}
                             </Button>
                             <Button
                                 size="small"
-                                type={sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? 'primary' : 'default'}
+                                type="default"
                                 onClick={toggleNameSort}
-                                style={{ minWidth: 82 }}
+                                style={{
+                                    ...sortButtonBaseStyle,
+                                    ...(sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? sortButtonActiveStyle : {}),
+                                }}
                             >
                                 {nameSort}
                             </Button>
