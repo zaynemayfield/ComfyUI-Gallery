@@ -6,7 +6,7 @@ import { useLocalStorageState, useDebounceFn } from 'ahooks';
 import { useRef, useEffect } from 'react';
 
 const GalleryOpenButton = () => {
-    const { open, setOpen, loading, settings } = useGalleryContext();
+    const { open, setOpen, settings } = useGalleryContext();
     const [position, setPosition] = useLocalStorageState<{ x: number; y: number }>('gallery-floating-btn-pos', {
         defaultValue: { x: 32, y: 32 },
     });
@@ -76,7 +76,7 @@ const GalleryOpenButton = () => {
             <Button
                 id="comfy-ui-gallery-open-button"
                 onClick={() => {
-                    if (!loading) setOpen(true);
+                    setOpen(true);
                 }}
                 style={{
                     display: "none"
@@ -144,10 +144,8 @@ const GalleryOpenButton = () => {
                     type={"primary"}
                     style={{ minWidth: 120 }}
                     onClick={() => {
-                        if (!loading) setOpen(true);
+                        setOpen(true);
                     }}
-                    disabled={loading}
-                    loading={loading}
                 >
                     {settings.buttonLabel || 'Open Gallery'}
                 </Button>
@@ -166,10 +164,8 @@ const GalleryOpenButton = () => {
                 aria-label={settings.buttonLabel || 'Launch ComfyUI Gallery'}
                 icon={<PictureOutlined />}
                 onClick={() => {
-                    if (!loading) setOpen(true);
+                    setOpen(true);
                 }}
-                disabled={loading}
-                loading={loading}
                 style={{
                     width: 34,
                     minWidth: 34,

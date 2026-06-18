@@ -68,6 +68,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 
 - Changed the default gallery entry point from a draggable floating "Open Gallery" button to a compact icon button intended to sit with other ComfyUI toolbar buttons.
 - Added a hover tooltip and accessible label: "Launch ComfyUI Gallery".
+- Kept the gallery toolbar button clickable during initial media scanning so users can open the modal and see loading progress immediately.
 - Kept the existing floating button mode available through settings for users who prefer the previous behavior.
 - Updated the default server settings in `user_settings.json` so new installs use the toolbar-style button by default.
 - Rebuilt `web/dist/assets/comfy-ui-gallery.js` so ComfyUI serves the updated frontend without requiring users to build from source.
