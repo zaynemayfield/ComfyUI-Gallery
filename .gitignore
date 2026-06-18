@@ -1,0 +1,6 @@
+/docs/
+__pycache__/
+*.py[cod]
+web/node_modules/
+web/.vite/
+web/dist/**/*.map
