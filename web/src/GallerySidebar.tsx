@@ -5,6 +5,7 @@ import type { FilesTree } from './types';
 import { useDrop, useCountDown } from 'ahooks';
 import FolderOutlined from '@ant-design/icons/lib/icons/FolderOutlined';
 import { ComfyAppApi } from './ComfyAppApi';
+import { getFolderMediaList } from './galleryFolderUtils';
 
 interface TreeDataNode {
     title: string;
@@ -64,8 +65,8 @@ const FolderTitle = memo(({ nodeData, currentFolder }: { nodeData: any, currentF
 
     // Get all image URLs in this folder
     const folderImages = React.useMemo(() => {
-        if (!data?.folders || !data.folders[nodeData.key]) return [];
-        return Object.values(data.folders[nodeData.key])
+        if (!data?.folders) return [];
+        return getFolderMediaList(data, nodeData.key)
             .filter((img: any) => img && img.url)
             .map((img: any) => img.url);
     }, [data, nodeData.key]);

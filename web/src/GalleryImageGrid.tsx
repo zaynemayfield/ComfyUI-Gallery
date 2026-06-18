@@ -8,6 +8,7 @@ import { MetadataView } from './MetadataView';
 import { ModelViewer } from './ModelViewer';
 import type { FileDetails } from './types';
 import { BASE_PATH } from "./ComfyAppApi";
+import { getFolderMediaList } from './galleryFolderUtils';
 
 const GalleryImageGrid = () => {
     const {
@@ -30,7 +31,7 @@ const GalleryImageGrid = () => {
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const imagesDetailsList = useMemo(() => {
-        let list: FileDetails[] = Object.values(data?.folders?.[currentFolder] ?? []);
+        let list: FileDetails[] = getFolderMediaList(data, currentFolder);
         if (searchFileName && searchFileName.trim() !== "") {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
@@ -79,7 +80,7 @@ const GalleryImageGrid = () => {
         // Set the info modal target
 
         // If the item is media/audio/3d, set previewing state so the preview group uses media renderer
-        const item = data?.folders?.[currentFolder]?.[imageName];
+        const item = imagesDetailsList.find(image => image.name === imageName);
         if (item && (item.type === 'media' || item.type === 'audio' || item.type === '3d')) {
             setPreviewingVideo(item.name);
         } else {
@@ -87,7 +88,7 @@ const GalleryImageGrid = () => {
         }
 
         setImageInfoName(imageName);
-    }, [setImageInfoName, data, currentFolder, setPreviewingVideo]);
+    }, [setImageInfoName, imagesDetailsList, setPreviewingVideo]);
 
     const Cell = useCallback(({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
         const index = rowIndex * gridSize.columnCount + columnIndex;
@@ -181,7 +182,7 @@ const GalleryImageGrid = () => {
                 <ImageCard
                     image={{
                         ...image,
-                        dragFolder: currentFolder
+                        dragFolder: image.sourceFolder || currentFolder
                     }}
                     key={image.name}
                     index={index}

@@ -8,6 +8,7 @@ import type { FileDetails, FilesTree } from './types';
 import type { AutoCompleteProps } from 'antd/es/auto-complete';
 import { ComfyAppApi, BASE_PATH, OPEN_BUTTON_ID } from './ComfyAppApi';
 import { useClickAway } from 'ahooks';
+import { getDescendantFolderKeys, getFolderMediaList, getRootFolders } from './galleryFolderUtils';
 
 function getImages(): Promise<FilesTree> {
     return new Promise(async (resolve, reject) => {
@@ -135,8 +136,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (data && data.folders) {
             const keys = Object.keys(data.folders);
-            if (keys.length > 0 && !data.folders[currentFolder]) {
-                setCurrentFolder(keys.sort()[0]);
+            if (keys.length > 0 && getDescendantFolderKeys(data, currentFolder).length === 0) {
+                setCurrentFolder(getRootFolders(data)[0] || keys.sort()[0]);
             }
         }
     }, [data, currentFolder]);
@@ -195,7 +196,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
 
     // Memoized list of all images in the current folder
     const imagesDetailsList = useMemo(() => {
-        let list: FileDetails[] = Object.values(data?.folders?.[currentFolder] ?? []);
+        let list: FileDetails[] = getFolderMediaList(data, currentFolder);
         if (searchFileName && searchFileName.trim() !== "") {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));

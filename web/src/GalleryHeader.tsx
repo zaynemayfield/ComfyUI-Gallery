@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { Flex, AutoComplete, Button, Segmented, Modal, message, Popconfirm } from 'antd';
-import { CloseSquareFilled, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { Flex, AutoComplete, Button, Segmented, message, Popconfirm, Tooltip } from 'antd';
+import { CloseSquareFilled, FolderOpenOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
 import Typography from 'antd/es/typography/Typography';
 import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import { BASE_PATH, ComfyAppApi } from './ComfyAppApi';
+import GalleryFolderBar from './GalleryFolderBar';
 
 const GalleryHeader = () => {
     const {
-        showSettings, setShowSettings,
-        searchFileName, setSearchFileName,
+        setShowSettings,
+        setSearchFileName,
         sortMethod, setSortMethod,
         imagesAutoCompleteNames,
         autoCompleteOptions, setAutoCompleteOptions,
@@ -70,33 +71,51 @@ const GalleryHeader = () => {
     }, [debouncedSearch, imagesAutoCompleteNames, setAutoCompleteOptions]);
 
     return (
-        <Flex 
-            justify={"space-between"} 
-            align={"center"}
-            gap={20}
-        >
-            <div
-                style={{
-                    display: "flex",
-                    alignContent: "center",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: "20px",
-                }}      
+        <Flex vertical gap={8} style={{ width: '100%' }}>
+            <Flex
+                justify={"space-between"}
+                align={"center"}
+                gap={12}
+                wrap="wrap"
             >
-                <Button
-                    size="middle"
-                    onClick={() => setSiderCollapsed((prev: boolean) => !prev)}
-                >
-                    {siderCollapsed ? <DoubleRightOutlined /> : <DoubleLeftOutlined />}
-                </Button>
-                <Button 
-                    size={"middle"} 
-                    onClick={() => setShowSettings(true)}
-                >
-                    Settings
-                </Button>
-            </div>
+                <Flex align="center" gap={8} style={{ minWidth: 210 }}>
+                    <PictureOutlined style={{ color: '#1677ff', fontSize: 20 }} />
+                    <Typography style={{ fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        ComfyUI Gallery
+                    </Typography>
+                    <Tooltip title={siderCollapsed ? 'Show folder tree' : 'Hide folder tree'} placement="bottom">
+                        <Button
+                            size="small"
+                            icon={<FolderOpenOutlined />}
+                            onClick={() => setSiderCollapsed((prev: boolean) => !prev)}
+                            aria-label={siderCollapsed ? 'Show folder tree' : 'Hide folder tree'}
+                        />
+                    </Tooltip>
+                </Flex>
+                <Flex align="center" gap={8} wrap="wrap" style={{ flex: 1, minWidth: 320 }}>
+                    <AutoComplete
+                        options={
+                            autoCompleteOptions && autoCompleteOptions.length > 0
+                                ? autoCompleteOptions
+                                : imagesAutoCompleteNames
+                        }
+                        style={{
+                            width: 280,
+                            maxWidth: '100%'
+                        }}
+                        onSearch={text => setSearch(text)}
+                        value={search}
+                        onChange={val => setSearch(val)}
+                        placeholder="Search files"
+                        allowClear={{
+                            clearIcon: <CloseSquareFilled />
+                        }}
+                    />
+                    <Segmented<string>
+                        options={['Newest', 'Oldest', 'Name ↑', 'Name ↓']}
+                        value={sortMethod}
+                        onChange={value => setSortMethod(value as any)}
+                    />
             {selectedImages && selectedImages.length > 0 && (
                 <>
                     <Popconfirm
@@ -234,31 +253,17 @@ const GalleryHeader = () => {
                     </Button>
                 </div>
             )}
-            <AutoComplete
-                options={
-                    autoCompleteOptions && autoCompleteOptions.length > 0 
-                        ? autoCompleteOptions 
-                        : imagesAutoCompleteNames
-                    }
-                style={{ 
-                    width: '50%' 
-                }}
-                onSearch={text => setSearch(text)}
-                value={search}
-                onChange={val => setSearch(val)}
-                placeholder="Search for file name"
-                allowClear={{ 
-                    clearIcon: <CloseSquareFilled /> 
-                }}
-            />
-            <Segmented<string>
-                style={{ 
-                    marginRight: 15 
-                }}
-                options={['Newest', 'Oldest', 'Name ↑', 'Name ↓']}
-                value={sortMethod}
-                onChange={value => setSortMethod(value as any)}
-            />
+                </Flex>
+                <Button
+                    size={"middle"}
+                    icon={<SettingOutlined />}
+                    onClick={() => setShowSettings(true)}
+                    style={{ marginLeft: 'auto' }}
+                >
+                    Settings
+                </Button>
+            </Flex>
+            <GalleryFolderBar />
         </Flex>
     );
 };

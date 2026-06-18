@@ -18,6 +18,7 @@ export interface FileDetails {
     date: string;
     metadata: Metadata;
     type: "image" | "media" | "audio" | "3d" | "divider" | "empty-space";
+    sourceFolder?: string;
 }
 
 export interface FolderContent {

@@ -4,6 +4,15 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 
 ## 2026-06-18
 
+### Gallery modal header and folder navigation
+
+- Added a compact title/logo area to the gallery modal header.
+- Moved Settings to the far right of the header.
+- Moved sorting controls next to a narrower search input.
+- Replaced the left header toggle with a compact folder-tree toggle icon.
+- Added a horizontal folder row below the header for root folders and subfolders.
+- Updated folder selection so parent folders show media from their descendant folders.
+
 ### ComfyUI toolbar entry point
 
 - Changed the default gallery entry point from a draggable floating "Open Gallery" button to a compact icon button intended to sit with other ComfyUI toolbar buttons.
