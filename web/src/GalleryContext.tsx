@@ -47,6 +47,7 @@ export interface SettingsState {
 }
 
 export type GalleryMediaFilter = 'all' | 'images' | 'videos';
+export type GalleryPreviewSize = 'small' | 'medium' | 'large';
 
 export const DEFAULT_SETTINGS: SettingsState = {
     relativePath: './',
@@ -54,7 +55,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
     buttonLabel: 'Launch ComfyUI Gallery',
     showDateDivider: true,
     floatingButton: false,
-    autoPlayVideos: true,
+    autoPlayVideos: false,
     hideOpenButton: false,
     darkMode: false,
     galleryShortcut: true,
@@ -82,6 +83,10 @@ export interface GalleryContextType {
     setSortMethod: Dispatch<SetStateAction<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>>;
     mediaFilter: GalleryMediaFilter;
     setMediaFilter: Dispatch<SetStateAction<GalleryMediaFilter>>;
+    previewSize: GalleryPreviewSize;
+    setPreviewSize: Dispatch<SetStateAction<GalleryPreviewSize>>;
+    mediaBatchSize: 20 | 40 | 60;
+    setMediaBatchSize: Dispatch<SetStateAction<20 | 40 | 60>>;
     imageInfoName: string | undefined;
     setImageInfoName: Dispatch<SetStateAction<string | undefined>>;
     open: boolean;
@@ -122,6 +127,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [showRawMetadata, setShowRawMetadata] = useState(false);
     const [sortMethod, setSortMethod] = useState<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>("Newest");
     const [mediaFilter, setMediaFilter] = useState<GalleryMediaFilter>('all');
+    const [previewSize, setPreviewSize] = useState<GalleryPreviewSize>('medium');
+    const [mediaBatchSize, setMediaBatchSize] = useState<20 | 40 | 60>(20);
     const [imageInfoName, setImageInfoName] = useState<string | undefined>(undefined);
     const [open, setOpen] = useState(false);
     const [previewingVideo, setPreviewingVideo] = useState<string | undefined>(undefined);
@@ -365,6 +372,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         showRawMetadata, setShowRawMetadata,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
+        previewSize, setPreviewSize,
+        mediaBatchSize, setMediaBatchSize,
         imageInfoName, setImageInfoName,
         open, setOpen,
         previewingVideo, setPreviewingVideo,
@@ -391,6 +400,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         showRawMetadata,
         sortMethod,
         mediaFilter,
+        previewSize,
+        mediaBatchSize,
         imageInfoName,
         open,
         previewingVideo,

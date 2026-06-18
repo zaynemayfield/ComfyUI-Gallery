@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { Empty, Image, Spin } from 'antd';
 import { AutoSizer } from 'react-virtualized';
 import { FixedSizeGrid } from 'react-window';
@@ -9,6 +9,48 @@ import { ModelViewer } from './ModelViewer';
 import type { FileDetails } from './types';
 import { BASE_PATH } from "./ComfyAppApi";
 import { getFolderMediaList } from './galleryFolderUtils';
+import type { GalleryPreviewSize } from './GalleryContext';
+
+const GRID_GAP = 16;
+const PREVIEW_SIZE_DIMENSIONS: Record<GalleryPreviewSize, { width: number; height: number }> = {
+    small: { width: 220, height: 285 },
+    medium: { width: ImageCardWidth, height: ImageCardHeight },
+    large: { width: 460, height: 590 },
+};
+
+const getPreviewLayout = (containerWidth: number, previewSize: GalleryPreviewSize) => {
+    const desired = PREVIEW_SIZE_DIMENSIONS[previewSize];
+    const safeWidth = Math.max(1, containerWidth);
+    const columnCount = Math.max(1, Math.floor(safeWidth / (desired.width + GRID_GAP)));
+    const columnWidth = Math.floor(safeWidth / columnCount);
+    const cardWidth = Math.max(140, Math.min(desired.width, columnWidth - GRID_GAP));
+    const cardHeight = Math.round(desired.height * (cardWidth / desired.width));
+
+    return {
+        columnCount,
+        columnWidth,
+        rowHeight: cardHeight + GRID_GAP,
+        cardWidth,
+        cardHeight,
+    };
+};
+
+const isMediaItem = (item: FileDetails) => (
+    item.type === "image" || item.type === "media" || item.type === "audio" || item.type === "3d"
+);
+
+const takeMediaBatch = (items: FileDetails[], limit: number) => {
+    const result: FileDetails[] = [];
+    let mediaCount = 0;
+
+    for (const item of items) {
+        if (mediaCount >= limit) break;
+        result.push(item);
+        if (isMediaItem(item)) mediaCount++;
+    }
+
+    return result;
+};
 
 const GalleryImageGrid = () => {
     const {
@@ -28,9 +70,16 @@ const GalleryImageGrid = () => {
         showRawMetadata,
         setShowRawMetadata,
         settings,
-        loading
+        loading,
+        previewSize,
+        mediaBatchSize
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
+    const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
+    const previewLayout = useMemo(
+        () => getPreviewLayout(gridSize.width, previewSize),
+        [gridSize.width, previewSize]
+    );
     const imagesDetailsList = useMemo(() => {
         let list: FileDetails[] = getFolderMediaList(data, currentFolder);
         if (mediaFilter === 'images') {
@@ -76,17 +125,29 @@ const GalleryImageGrid = () => {
                 return list;
         }
     }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, gridSize.columnCount, settings.showDateDivider]);
+    const visibleImagesDetailsList = useMemo(
+        () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
+        [imagesDetailsList, visibleMediaLimit]
+    );
+    const rowCount = useMemo(
+        () => Math.ceil(visibleImagesDetailsList.length / Math.max(1, previewLayout.columnCount)),
+        [visibleImagesDetailsList.length, previewLayout.columnCount]
+    );
 
     const imagesUrlsLists = useMemo(() =>
-        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio" || image.type === "3d").map(image => `${BASE_PATH}${image.url}`),
-        [imagesDetailsList]
+        visibleImagesDetailsList.filter(isMediaItem).map(image => `${BASE_PATH}${image.url}`),
+        [visibleImagesDetailsList]
     );
+
+    useEffect(() => {
+        setVisibleMediaLimit(mediaBatchSize);
+    }, [currentFolder, searchFileName, sortMethod, mediaFilter, mediaBatchSize]);
 
     const handleInfoClick = useCallback((imageName: string) => {
         // Set the info modal target
 
         // If the item is media/audio/3d, set previewing state so the preview group uses media renderer
-        const item = imagesDetailsList.find(image => image.name === imageName);
+        const item = visibleImagesDetailsList.find(image => image.name === imageName);
         if (item && (item.type === 'media' || item.type === 'audio' || item.type === '3d')) {
             setPreviewingVideo(item.name);
         } else {
@@ -94,11 +155,11 @@ const GalleryImageGrid = () => {
         }
 
         setImageInfoName(imageName);
-    }, [setImageInfoName, imagesDetailsList, setPreviewingVideo]);
+    }, [setImageInfoName, visibleImagesDetailsList, setPreviewingVideo]);
 
     const Cell = useCallback(({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
-        const index = rowIndex * gridSize.columnCount + columnIndex;
-        const image = imagesDetailsList[index];
+        const index = rowIndex * previewLayout.columnCount + columnIndex;
+        const image = visibleImagesDetailsList[index];
         if (!image) return null;
         if (image.type === 'divider') {
             if (columnIndex !== 0) return null;
@@ -110,8 +171,8 @@ const GalleryImageGrid = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: `calc(${gridSize.columnCount} * ${ImageCardWidth + 16}px)`,
-                        gridColumn: `span ${gridSize.columnCount}`,
+                        width: gridSize.width,
+                        gridColumn: `span ${previewLayout.columnCount}`,
                         background: 'transparent',
                         padding: 0,
                         minHeight: 48,
@@ -192,18 +253,20 @@ const GalleryImageGrid = () => {
                     }}
                     key={image.name}
                     index={index}
+                    cardWidth={previewLayout.cardWidth}
+                    cardHeight={previewLayout.cardHeight}
                     onInfoClick={() => handleInfoClick(image.name)} onVideoClick={() => setPreviewingVideo(image.name)}
                 />
             </div>
         );
-    }, [gridSize.columnCount, imagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder]);
+    }, [gridSize.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight]);
 
     useEffect(() => {
         const { width, height } = autoSizer;
-        const columnCount = Math.max(1, Math.floor(width / (ImageCardWidth + 16)));
-        const rowCount = Math.ceil(imagesDetailsList.length / columnCount);
+        const { columnCount } = getPreviewLayout(width, previewSize);
+        const rowCount = Math.ceil(visibleImagesDetailsList.length / columnCount);
         setGridSize({ width, height, columnCount, rowCount });
-    }, [autoSizer.width, autoSizer.height, imagesDetailsList.length]);
+    }, [autoSizer.width, autoSizer.height, visibleImagesDetailsList.length, previewSize]);
 
     useEffect(() => {
         const grid = document.querySelector(".grid-element");
@@ -216,9 +279,25 @@ const GalleryImageGrid = () => {
 
     // Memoized previewable images for InfoView navigation and rendering
     const previewableImages = useMemo(() =>
-        imagesDetailsList.filter(img => img.type === "image" || img.type === "media" || img.type === "audio" || img.type === "3d"),
-        [imagesDetailsList]
+        visibleImagesDetailsList.filter(isMediaItem),
+        [visibleImagesDetailsList]
     );
+
+    const loadNextBatch = useCallback(() => {
+        setVisibleMediaLimit(currentLimit => {
+            const totalMediaCount = imagesDetailsList.filter(isMediaItem).length;
+            if (currentLimit >= totalMediaCount) return currentLimit;
+            return Math.min(totalMediaCount, currentLimit + mediaBatchSize);
+        });
+    }, [imagesDetailsList, mediaBatchSize]);
+
+    const handleGridScroll = useCallback(({ scrollTop }: { scrollTop: number }) => {
+        const scrollBottom = scrollTop + autoSizer.height;
+        const loadedHeight = rowCount * previewLayout.rowHeight;
+        if (loadedHeight - scrollBottom <= previewLayout.rowHeight * 2) {
+            loadNextBatch();
+        }
+    }, [autoSizer.height, rowCount, previewLayout.rowHeight, loadNextBatch]);
 
     // Helper to resolve image for Info/Image render
     const resolvePreviewableImage = useCallback((image: FileDetails | undefined, info: { current: number }) => {
@@ -244,7 +323,7 @@ const GalleryImageGrid = () => {
         setImageInfoName(resolved!.name);
 
         return resolved;
-    }, [previewableImages, imagesDetailsList, setImageInfoName]);
+    }, [previewableImages, setImageInfoName]);
 
     const stopPropagation = useCallback((e: React.SyntheticEvent) => {
         e.stopPropagation();
@@ -356,7 +435,7 @@ const GalleryImageGrid = () => {
     );
 
     return (
-        <div id="imagesBox" style={{ width: '100%', height: '100%', position: 'relative' }} ref={containerRef}>
+        <div id="imagesBox" style={{ width: '100%', height: '100%', position: 'relative', overflowX: 'hidden' }} ref={containerRef}>
             {loading && (
                 <div style={{
                     position: 'absolute',
@@ -394,7 +473,7 @@ const GalleryImageGrid = () => {
                     },
                 }}
             >
-                {imagesDetailsList.length === 0 ? (
+                {visibleImagesDetailsList.length === 0 ? (
                     <Empty
                         style={{
                             position: "absolute",
@@ -410,19 +489,22 @@ const GalleryImageGrid = () => {
                             if (autoSizer.width !== width || autoSizer.height !== height) {
                                 setTimeout(() => setAutoSizer({ width, height }), 0);
                             }
+                            const layout = getPreviewLayout(width, previewSize);
                             return (
                                 <FixedSizeGrid
-                                    columnCount={gridSize.columnCount}
-                                    rowCount={gridSize.rowCount}
-                                    columnWidth={ImageCardWidth + 16}
-                                    rowHeight={ImageCardHeight + 16}
+                                    columnCount={layout.columnCount}
+                                    rowCount={rowCount}
+                                    columnWidth={layout.columnWidth}
+                                    rowHeight={layout.rowHeight}
                                     width={width}
                                     height={height}
                                     className={"grid-element"}
+                                    onScroll={handleGridScroll}
                                     style={{
                                         display: "flex",
                                         alignContent: "center",
-                                        justifyContent: "center"
+                                        justifyContent: "center",
+                                        overflowX: "hidden"
                                     }}
                                 >
                                     {Cell}

@@ -11,6 +11,9 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Moved sorting controls next to a narrower search input.
 - Replaced separate Newest/Oldest and Name up/down controls with compact toggle buttons.
 - Added an All/Images/Videos media filter.
+- Added a Small/Medium/Large preview size control for responsive media thumbnails.
+- Added a 20/40/60 media batch control that reveals more thumbnails as the user scrolls.
+- Added a top-row video autoplay toggle and changed the default autoplay setting to off.
 - Replaced the default modal close icon with a red Close button in the header row.
 - Replaced the left header toggle with a compact icon that shows or hides the horizontal folder navigation.
 - Restyled horizontal folder navigation into one icon-led row using separators instead of section labels.
@@ -19,6 +22,8 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added clear separators between folder action groups so create, rename, move, and delete controls are easier to scan.
 - Replaced the folder move text input with a tree picker that previews the selected destination before moving.
 - Updated the move picker so selecting a destination automatically expands the tree branch that shows the preview placement.
+- Updated the media grid sizing so cards fit the available width without needing a bottom horizontal scrollbar.
+- Added subtle media-type borders to preview cards so image and video thumbnails are easier to distinguish.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point

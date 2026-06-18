@@ -15,10 +15,13 @@ const GalleryHeader = () => {
         setSearchFileName,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
+        previewSize, setPreviewSize,
+        mediaBatchSize, setMediaBatchSize,
         imagesAutoCompleteNames,
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
         selectedImages, setSelectedImages,
+        settings, setSettings,
     } = useGalleryContext();
 
     const [search, setSearch] = useState("");
@@ -151,6 +154,32 @@ const GalleryHeader = () => {
                         ]}
                         value={mediaFilter}
                         onChange={value => setMediaFilter(value as any)}
+                    />
+                    <Segmented
+                        options={[
+                            { label: 'Small', value: 'small' },
+                            { label: 'Medium', value: 'medium' },
+                            { label: 'Large', value: 'large' },
+                        ]}
+                        value={previewSize}
+                        onChange={value => setPreviewSize(value as any)}
+                    />
+                    <Segmented
+                        options={[
+                            { label: '20', value: 20 },
+                            { label: '40', value: 40 },
+                            { label: '60', value: 60 },
+                        ]}
+                        value={mediaBatchSize}
+                        onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
+                    />
+                    <Segmented
+                        options={[
+                            { label: 'Autoplay Off', value: false },
+                            { label: 'Autoplay On', value: true },
+                        ]}
+                        value={settings.autoPlayVideos}
+                        onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
                     />
             {selectedImages && selectedImages.length > 0 && (
                 <>

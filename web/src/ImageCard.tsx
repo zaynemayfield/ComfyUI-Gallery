@@ -8,7 +8,15 @@ import { useGalleryContext } from './GalleryContext';
 import { BASE_PATH } from './ComfyAppApi';
 import { use3DThumbnail } from './GlobalModelRenderer';
 
-const ImageCard3DThumbnail = ({ image, onClick }: { image: FileDetails, onClick: () => void }) => {
+const ImageCard3DThumbnail = ({
+    image,
+    onClick,
+    cardWidth,
+}: {
+    image: FileDetails;
+    onClick: () => void;
+    cardWidth: number;
+}) => {
     const typeMatch = image.url.match(/\.([^.]+)$/);
     const type = typeMatch ? typeMatch[1].toLowerCase() : '';
     const thumbnail = use3DThumbnail(`${BASE_PATH}${image.url}`, type);
@@ -19,7 +27,7 @@ const ImageCard3DThumbnail = ({ image, onClick }: { image: FileDetails, onClick:
                 <img
                     style={{
                         objectFit: "cover",
-                        maxWidth: ImageCardWidth,
+                        maxWidth: cardWidth,
                         width: '100%',
                         height: '100%',
                         userSelect: 'none',
@@ -61,21 +69,34 @@ const ImageCard3DThumbnail = ({ image, onClick }: { image: FileDetails, onClick:
 
 export const ImageCardWidth = 350;
 export const ImageCardHeight = 450;
+export type ImageCardDimensions = {
+    width: number;
+    height: number;
+};
 
 function ImageCard({
     image,
     index,
     onInfoClick,
-    onVideoClick
+    onVideoClick,
+    cardWidth = ImageCardWidth,
+    cardHeight = ImageCardHeight,
 }: {
     image: FileDetails & { dragFolder?: string };
     index: number;
     onInfoClick: (imageName: string | undefined) => void;
     onVideoClick: (imageName: string | undefined) => void;
+    cardWidth?: number;
+    cardHeight?: number;
 }) {
     const { settings, selectedImages, setSelectedImages, setPreviewingVideo } = useGalleryContext();
     const dragRef = useRef<HTMLDivElement>(null);
     const [dragging, setDragging] = useState(false);
+    const mediaBorderColor = image.type === 'media'
+        ? 'rgba(250, 173, 20, 0.65)'
+        : image.type === 'image'
+            ? 'rgba(105, 177, 255, 0.55)'
+            : 'rgba(127, 127, 127, 0.38)';
 
     useDrag(
         {
@@ -141,12 +162,13 @@ function ImageCard({
             className='image-card'
             ref={dragRef}
             style={{
-                width: ImageCardWidth,
-                height: ImageCardHeight,
+                width: cardWidth,
+                height: cardHeight,
                 borderRadius: 8,
                 overflow: "hidden",
-                margin: "15px",
-                border: dragging ? '2px solid #1890ff' : 'none',
+                margin: 0,
+                border: dragging ? '2px solid #1890ff' : `1px solid ${mediaBorderColor}`,
+                boxSizing: 'border-box',
                 opacity: dragging ? 0.5 : 1,
                 display: "flex",
                 alignContent: "center",
@@ -164,8 +186,8 @@ function ImageCard({
                     style={{
                         objectFit: "cover",
                         ...(settings.imageThumbFit === 'height'
-                            ? { maxHeight: ImageCardHeight, width: 'auto', maxWidth: '100%' }
-                            : { maxWidth: ImageCardWidth, width: '100%', height: 'auto' }),
+                            ? { maxHeight: cardHeight, width: 'auto', maxWidth: '100%' }
+                            : { maxWidth: cardWidth, width: '100%', height: 'auto' }),
                         userSelect: 'none',
                         cursor: 'grab',
                     }}
@@ -204,7 +226,7 @@ function ImageCard({
                     />
                 </div>
             </>) : image.type === "3d" ? (
-                <ImageCard3DThumbnail image={image as any} onClick={() => {
+                <ImageCard3DThumbnail image={image as any} cardWidth={cardWidth} onClick={() => {
                     try { setPreviewingVideo(undefined); } catch { }
                     document.getElementById(image.url)?.click();
                 }} />
@@ -212,8 +234,8 @@ function ImageCard({
                 <video
                     style={{
                         ...(settings.videoThumbFit === 'height'
-                            ? { maxHeight: ImageCardHeight }
-                            : { maxWidth: ImageCardWidth }),
+                            ? { maxHeight: cardHeight }
+                            : { maxWidth: cardWidth }),
                         cursor: "pointer"
                     }}
                     src={`${BASE_PATH}${image.url}`}
