@@ -41,6 +41,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Reworked preview Rename into a controlled modal and tightened preview action button cursor behavior.
 - Moved metadata and raw metadata viewing into the normal media preview overlay and removed the separate card info button.
 - Improved positive prompt extraction for common ComfyUI prompt-node formats and widened the preview metadata panel.
+- Added video file size and duration text to the full preview controls using the `size - duration` format.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.

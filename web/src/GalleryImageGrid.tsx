@@ -191,6 +191,13 @@ const getStoredPreviewVolume = () => {
 const getStoredPreviewLoop = () => localStorage.getItem(PREVIEW_LOOP_KEY) === 'true';
 const getStoredPreviewMuted = () => localStorage.getItem(PREVIEW_MUTED_KEY) === 'true';
 
+const formatDuration = (duration?: number) => {
+    if (!duration || Number.isNaN(duration)) return undefined;
+    const minutes = Math.floor(duration / 60);
+    const seconds = Math.floor(duration % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 const PreviewVideo = ({ image }: { image: FileDetails }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -198,6 +205,8 @@ const PreviewVideo = ({ image }: { image: FileDetails }) => {
     const [muted, setMuted] = useState(getStoredPreviewMuted);
     const [loop, setLoop] = useState(getStoredPreviewLoop);
     const [playing, setPlaying] = useState(true);
+    const [duration, setDuration] = useState<number | undefined>(undefined);
+    const videoDetails = [image.metadata?.fileinfo?.size, formatDuration(duration)].filter(Boolean).join(' - ');
 
     useEffect(() => {
         if (!videoRef.current) return;
@@ -263,6 +272,7 @@ const PreviewVideo = ({ image }: { image: FileDetails }) => {
                 onLoadedMetadata={(event) => {
                     event.currentTarget.volume = volume;
                     event.currentTarget.muted = muted;
+                    setDuration(event.currentTarget.duration);
                 }}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
@@ -293,6 +303,19 @@ const PreviewVideo = ({ image }: { image: FileDetails }) => {
                     color: '#fff',
                 }}
             >
+                {videoDetails && (
+                    <Typography.Text
+                        style={{
+                            color: 'rgba(255, 255, 255, 0.88)',
+                            fontSize: 12,
+                            lineHeight: '20px',
+                            maxWidth: 180,
+                        }}
+                        ellipsis
+                    >
+                        {videoDetails}
+                    </Typography.Text>
+                )}
                 <Button
                     size="small"
                     type="text"
