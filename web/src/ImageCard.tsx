@@ -98,6 +98,7 @@ function ImageCard({
     const [dragging, setDragging] = useState(false);
     const [videoInView, setVideoInView] = useState(false);
     const [videoDuration, setVideoDuration] = useState<number | undefined>(undefined);
+    const [thumbnailFailed, setThumbnailFailed] = useState(false);
     const compactItems = image.compactItems?.length ? image.compactItems : [image];
     const [compactIndex, setCompactIndex] = useState(0);
     const currentImage = compactItems[Math.min(compactIndex, compactItems.length - 1)] ?? image;
@@ -113,10 +114,13 @@ function ImageCard({
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
     const fileSizeText = currentImage.metadata?.fileinfo?.size;
-    const durationText = currentImage.type === 'media' ? formatDuration(videoDuration) : undefined;
+    const durationText = currentImage.type === 'media'
+        ? currentImage.metadata?.fileinfo?.duration || formatDuration(videoDuration)
+        : undefined;
     const detailsText = currentImage.type === 'media'
         ? [fileSizeText, durationText].filter(Boolean).join(' - ')
         : fileSizeText;
+    const videoThumbnailSrc = `${BASE_PATH}/Gallery/video-thumbnail?path=${encodeURIComponent(currentImage.url)}&v=${currentImage.timestamp || ''}`;
 
     useEffect(() => {
         setCompactIndex(0);
@@ -124,6 +128,7 @@ function ImageCard({
 
     useEffect(() => {
         setVideoDuration(undefined);
+        setThumbnailFailed(false);
     }, [currentImage.url]);
 
     useDrag(
@@ -465,41 +470,94 @@ function ImageCard({
                     document.getElementById(currentImage.url)?.click();
                 }} />
             ) : <>
-                <video
-                    key={currentImage.url}
-                    ref={videoRef}
-                    style={{
-                        ...(settings.videoThumbFit === 'height'
-                            ? { maxHeight: cardHeight }
-                            : { maxWidth: cardWidth }),
-                        cursor: "pointer"
-                    }}
-                    src={`${BASE_PATH}${currentImage.url}`}
-                    autoPlay={false}
-                    loop={settings.autoPlayVideos}
-                    muted={true}
-                    preload="metadata"
-                    onLoadedMetadata={(event) => setVideoDuration(event.currentTarget.duration)}
-                    onClick={(event) => {
-                        if (multiSelectMode) {
-                            event.stopPropagation();
-                            event.preventDefault();
-                            toggleSelected();
-                            return;
-                        }
-                        onPreviewOpen?.(currentImage, compactItems);
-                        onVideoClick(currentImage);
-                        document.getElementById(currentImage.url)?.click();
-                    }}
-                    draggable
-                    onDragStart={handleNativeDragStart}
-                />
+                {settings.autoPlayVideos && videoInView ? (
+                    <video
+                        key={currentImage.url}
+                        ref={videoRef}
+                        style={{
+                            ...(settings.videoThumbFit === 'height'
+                                ? { maxHeight: cardHeight }
+                                : { maxWidth: cardWidth }),
+                            cursor: "pointer"
+                        }}
+                        src={`${BASE_PATH}${currentImage.url}`}
+                        autoPlay={false}
+                        loop={settings.autoPlayVideos}
+                        muted={true}
+                        preload="metadata"
+                        onLoadedMetadata={(event) => setVideoDuration(event.currentTarget.duration)}
+                        onClick={(event) => {
+                            if (multiSelectMode) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                toggleSelected();
+                                return;
+                            }
+                            onPreviewOpen?.(currentImage, compactItems);
+                            onVideoClick(currentImage);
+                            document.getElementById(currentImage.url)?.click();
+                        }}
+                        draggable
+                        onDragStart={handleNativeDragStart}
+                    />
+                ) : thumbnailFailed ? (
+                    <div
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', background: '#23272f', color: '#fff', cursor: 'pointer' }}
+                        onClick={(event) => {
+                            if (multiSelectMode) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                toggleSelected();
+                                return;
+                            }
+                            onPreviewOpen?.(currentImage, compactItems);
+                            onVideoClick(currentImage);
+                            document.getElementById(currentImage.url)?.click();
+                        }}
+                    >
+                        <VideoCameraOutlined style={{ fontSize: 56, marginBottom: 14 }} />
+                        <Typography.Text style={{ color: '#fff', padding: '0 16px', textAlign: 'center', maxWidth: '100%' }} ellipsis>
+                            {currentImage.name}
+                        </Typography.Text>
+                    </div>
+                ) : (
+                    <img
+                        key={currentImage.url}
+                        style={{
+                            objectFit: 'contain',
+                            width: '100%',
+                            height: '100%',
+                            maxWidth: cardWidth,
+                            maxHeight: cardHeight,
+                            background: '#111',
+                            userSelect: 'none',
+                            cursor: 'pointer',
+                        }}
+                        src={videoThumbnailSrc}
+                        loading="lazy"
+                        onError={() => setThumbnailFailed(true)}
+                        onClick={(event) => {
+                            if (multiSelectMode) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                toggleSelected();
+                                return;
+                            }
+                            onPreviewOpen?.(currentImage, compactItems);
+                            onVideoClick(currentImage);
+                            document.getElementById(currentImage.url)?.click();
+                        }}
+                        alt={currentImage.name}
+                        draggable
+                        onDragStart={handleNativeDragStart}
+                    />
+                )}
                 <Image
                     id={currentImage.url}
                     style={{
                         display: "none"
                     }}
-                    src={`${BASE_PATH}${currentImage.url}`}
+                    src={videoThumbnailSrc}
                     loading="lazy"
                     // preview={false}
                     alt={currentImage.name}

@@ -1,5 +1,5 @@
 import Modal from 'antd/es/modal/Modal';
-import { Button, Flex, Input, Select, Switch, Typography } from 'antd';
+import { Button, Flex, Input, Switch, Typography } from 'antd';
 import { useGalleryContext, type SettingsState } from './GalleryContext';
 import { useSetState } from 'ahooks';
 import { useEffect, useState } from 'react';
@@ -64,62 +64,16 @@ const GallerySettingsModal = () => {
                 gap={16}
             >
                 <div>
-                    <Typography.Title 
+                    <Typography.Title
                         level={5}
                     >
                         Relative Path:
                     </Typography.Title>
-                    <Input 
-                        value={staged.relativePath} 
-                        onChange={e => setStaged({ relativePath: e.target.value })} 
+                    <Input
+                        value={staged.relativePath}
+                        onChange={e => setStaged({ relativePath: e.target.value })}
                     />
                 </div>
-                <div>
-                    <Typography.Title 
-                        level={5}
-                    >
-                        Button Box Query:
-                    </Typography.Title>
-                    <Input 
-                        value={staged.buttonBoxQuery} 
-                        onChange={e => setStaged({ buttonBoxQuery: e.target.value })} 
-                    />
-                </div>
-                <div>
-                    <Typography.Title 
-                        level={5}
-                    >
-                        Button Label:
-                    </Typography.Title>
-                    <Input 
-                        value={staged.buttonLabel} 
-                        onChange={e => setStaged({ buttonLabel: e.target.value })} 
-                    />
-                </div>
-                <Switch
-                    checkedChildren={"Show Date Divider"}
-                    unCheckedChildren={"Don't Show Date Divider"}
-                    checked={staged.showDateDivider}
-                    onChange={checked => setStaged({ showDateDivider: checked })}
-                />
-                <Switch
-                    checkedChildren={"Floating Button"}
-                    unCheckedChildren={"Normal Button"}
-                    checked={staged.floatingButton}
-                    onChange={checked => setStaged({ floatingButton: checked })}
-                />
-                <Switch
-                    checkedChildren={"Auto Play Videos"}
-                    unCheckedChildren={"Don't Auto Play Videos"}
-                    checked={staged.autoPlayVideos}
-                    onChange={checked => setStaged({ autoPlayVideos: checked })}
-                />
-                <Switch
-                    checkedChildren={"Hide Open Button"}
-                    unCheckedChildren={"Show Open Button"}
-                    checked={staged.hideOpenButton}
-                    onChange={checked => setStaged({ hideOpenButton: checked })}
-                />
                 <Switch
                     checkedChildren={"Dark Mode"}
                     unCheckedChildren={"Light Mode"}
@@ -150,32 +104,6 @@ const GallerySettingsModal = () => {
                     checked={staged.usePollingObserver}
                     onChange={checked => setStaged({ usePollingObserver: checked })}
                 />
-                <div>
-                    <Typography.Title level={5}>Image Thumb Fit:</Typography.Title>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Constrain image thumbnails in the grid by width or height</Typography.Text>
-                    <Select
-                        value={staged.imageThumbFit}
-                        onChange={val => setStaged({ imageThumbFit: val })}
-                        style={{ width: '100%' }}
-                        options={[
-                            { value: 'width', label: 'Fit Width' },
-                            { value: 'height', label: 'Fit Height' },
-                        ]}
-                    />
-                </div>
-                <div>
-                    <Typography.Title level={5}>Video Thumb Fit:</Typography.Title>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Constrain video thumbnails in the grid by width or height</Typography.Text>
-                    <Select
-                        value={staged.videoThumbFit}
-                        onChange={val => setStaged({ videoThumbFit: val })}
-                        style={{ width: '100%' }}
-                        options={[
-                            { value: 'width', label: 'Fit Width' },
-                            { value: 'height', label: 'Fit Height' },
-                        ]}
-                    />
-                </div>
                 <div>
                     <Typography.Title level={5}>Scan File Extensions:</Typography.Title>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>Comma separated (e.g. png, jpg, mp4, wav)</Typography.Text>

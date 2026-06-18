@@ -3,6 +3,7 @@ export interface FileInfo {
     resolution: string;
     date: string;
     size: string;
+    duration?: string;
 }
 
 export interface Metadata {

@@ -11,6 +11,8 @@ import threading
 import queue
 import asyncio
 import shutil
+import hashlib
+import subprocess
 
 from .folder_monitor import FileSystemMonitor
 from .folder_scanner import _scan_for_images, DEFAULT_EXTENSIONS
@@ -35,6 +37,7 @@ PromptServer.instance.scan_lock = threading.Lock()
 
 # Settings file for persistent user settings
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_settings.json")
+THUMBNAIL_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".thumbnail_cache")
 
 
 def is_path_inside(path, root):
@@ -132,6 +135,47 @@ def resolve_static_file_path(image_url):
     return full_image_path, static_dir
 
 
+def get_video_thumbnail_cache_path(video_path):
+    stat = os.stat(video_path)
+    cache_key = f"{os.path.realpath(video_path)}:{stat.st_mtime_ns}:{stat.st_size}"
+    return os.path.join(THUMBNAIL_CACHE_DIR, hashlib.sha256(cache_key.encode("utf-8")).hexdigest() + ".jpg")
+
+
+def generate_video_thumbnail(video_path, thumbnail_path):
+    os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
+    temp_path = thumbnail_path + ".tmp.jpg"
+    commands = [
+        [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-ss", "00:00:01", "-i", video_path,
+            "-frames:v", "1", "-vf", "scale='min(640,iw)':-2",
+            "-q:v", "5", temp_path
+        ],
+        [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-i", video_path,
+            "-frames:v", "1", "-vf", "scale='min(640,iw)':-2",
+            "-q:v", "5", temp_path
+        ],
+    ]
+    last_error = None
+    for command in commands:
+        try:
+            subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=20)
+            if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                os.replace(temp_path, thumbnail_path)
+                return thumbnail_path
+        except Exception as e:
+            last_error = e
+        finally:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+    raise RuntimeError(f"Unable to generate video thumbnail: {last_error}")
+
+
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -178,6 +222,31 @@ async def save_settings(request):
         save_settings_to_file(data)
         return web.Response(text="Settings saved")
     except Exception as e:
+        return web.Response(status=500, text=str(e))
+
+
+@PromptServer.instance.routes.get("/Gallery/video-thumbnail")
+async def get_video_thumbnail(request):
+    try:
+        image_url = request.rel_url.query.get("path", "")
+        full_video_path, _ = resolve_static_file_path(image_url)
+        if not os.path.isfile(full_video_path):
+            return web.Response(status=404, text="Video not found")
+        if os.path.splitext(full_video_path)[1].lower() not in (".mp4", ".webm", ".mov"):
+            return web.Response(status=400, text="Unsupported thumbnail media type")
+
+        thumbnail_path = get_video_thumbnail_cache_path(full_video_path)
+        if not os.path.exists(thumbnail_path):
+            generate_video_thumbnail(full_video_path, thumbnail_path)
+        return web.FileResponse(thumbnail_path, headers={"Cache-Control": "public, max-age=86400"})
+    except (ValueError, PermissionError) as e:
+        return web.Response(status=400, text=str(e))
+    except FileNotFoundError:
+        return web.Response(status=500, text="ffmpeg was not found")
+    except subprocess.TimeoutExpired:
+        return web.Response(status=504, text="Video thumbnail generation timed out")
+    except Exception as e:
+        gallery_log(f"Error generating video thumbnail: {e}")
         return web.Response(status=500, text=str(e))
 
 @PromptServer.instance.routes.get("/Gallery/images")

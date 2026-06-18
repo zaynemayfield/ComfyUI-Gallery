@@ -1,5 +1,6 @@
 # folder_scanner.py
 import os
+import subprocess
 from datetime import datetime
 from .metadata_extractor import buildMetadata, get_size  # Import metadata extractor
 
@@ -10,6 +11,30 @@ DEFAULT_EXTENSIONS = [
     '.wav', '.mp3', '.m4a', '.flac',   # Audio
     '.obj', '.glb', '.gltf', '.fbx', '.stl', '.usd', '.usdz' # 3D
 ]
+
+
+def get_video_duration(path):
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        duration = float(result.stdout.strip())
+        if duration > 0:
+            minutes = int(duration // 60)
+            seconds = int(duration % 60)
+            return f"{minutes}:{seconds:02d}"
+    except Exception:
+        return ""
+    return ""
 
 def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_extensions=None):
     """Scans directories for files matching allowed extensions."""
@@ -78,6 +103,7 @@ def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_exte
                                 metadata = {}
                         elif ext in ['.mp4', '.webm', '.mov']:
                             file_type = "media"
+                            metadata["fileinfo"]["duration"] = get_video_duration(full_path)
                         elif ext in ['.wav', '.mp3', '.m4a', '.flac']:
                             file_type = "audio"
                         elif ext in ['.obj', '.glb', '.gltf', '.fbx', '.stl', '.usd', '.usdz']:
