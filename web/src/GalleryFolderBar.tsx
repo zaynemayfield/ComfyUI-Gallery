@@ -24,6 +24,18 @@ const Separator = () => (
     </Typography.Text>
 );
 
+const ActionDivider = () => (
+    <span
+        aria-hidden="true"
+        style={{
+            width: 1,
+            height: 24,
+            margin: '0 4px',
+            background: 'rgba(5, 5, 5, 0.18)',
+        }}
+    />
+);
+
 const FolderButton = ({
     active,
     children,
@@ -193,6 +205,7 @@ const GalleryFolderBar = () => {
                     >
                         Create
                     </Button>
+                    <ActionDivider />
                     <Input
                         size="small"
                         value={renameValue}
@@ -216,6 +229,7 @@ const GalleryFolderBar = () => {
                     >
                         Rename
                     </Button>
+                    <ActionDivider />
                     <Input
                         size="small"
                         value={moveTarget}
@@ -239,6 +253,7 @@ const GalleryFolderBar = () => {
                     >
                         Move
                     </Button>
+                    <ActionDivider />
                     <Popconfirm
                         title="Delete folder"
                         description={`Delete ${currentFolder}? This removes the folder and its contents.`}
