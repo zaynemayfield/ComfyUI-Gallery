@@ -17,7 +17,7 @@ import { useGalleryContext } from './GalleryContext';
 import { MetadataView } from './MetadataView';
 import { ModelViewer } from './ModelViewer';
 import type { FileDetails } from './types';
-import { BASE_PATH, ComfyAppApi } from "./ComfyAppApi";
+import { BASE_PATH, BASE_Z_INDEX, ComfyAppApi } from "./ComfyAppApi";
 import { getFolderMediaList } from './galleryFolderUtils';
 import type { GalleryPreviewSize } from './GalleryContext';
 
@@ -390,6 +390,7 @@ const PreviewActions = ({
                 : `Delete ${currentImage.name}? This cannot be undone.`,
             okText: 'Delete',
             okButtonProps: { danger: true },
+            zIndex: BASE_Z_INDEX + 300,
             onOk: () => runBatchAction('Deleted', image => ComfyAppApi.deleteImage(image.url)),
         });
     };
@@ -410,6 +411,7 @@ const PreviewActions = ({
                 />
             ),
             okText: 'Rename',
+            zIndex: BASE_Z_INDEX + 300,
             onOk: async () => {
                 const nextValue = renameValue.trim();
                 if (!nextValue || /[\\/]/.test(nextValue)) {
@@ -438,6 +440,7 @@ const PreviewActions = ({
         <>
             <div
                 onClick={event => event.stopPropagation()}
+                onMouseDown={event => event.stopPropagation()}
                 style={{
                     width: 'min(92vw, 760px)',
                     minHeight: 44,
@@ -449,20 +452,24 @@ const PreviewActions = ({
                     borderRadius: 6,
                     background: 'rgba(0, 0, 0, 0.72)',
                     border: '1px solid rgba(255, 255, 255, 0.16)',
+                    position: 'relative',
+                    zIndex: BASE_Z_INDEX + 120,
+                    userSelect: 'none',
                 }}
             >
-                <Button danger icon={<DeleteOutlined />} loading={busy} onClick={confirmDelete}>
+                <Button danger icon={<DeleteOutlined />} loading={busy} onClick={confirmDelete} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     Delete
                 </Button>
-                <Button icon={<FolderOpenOutlined />} loading={busy} onClick={() => setMoveOpen(true)}>
+                <Button icon={<FolderOpenOutlined />} loading={busy} onClick={() => setMoveOpen(true)} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     Move
                 </Button>
-                <Button icon={<EditOutlined />} loading={busy} onClick={confirmRename}>
+                <Button icon={<EditOutlined />} loading={busy} onClick={confirmRename} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     Rename
                 </Button>
             </div>
             <Modal
                 open={moveOpen}
+                zIndex={BASE_Z_INDEX + 300}
                 title={isCompactGroup ? 'Move compacted files' : 'Move file'}
                 okText="Move"
                 okButtonProps={{ disabled: !selectedFolder, loading: busy }}
@@ -531,6 +538,7 @@ const GalleryImageGrid = () => {
         searchFileName,
         sortMethod,
         mediaFilter,
+        dateRange,
         gridSize,
         setGridSize,
         autoSizer,
@@ -568,6 +576,17 @@ const GalleryImageGrid = () => {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
         }
+        const [dateStart, dateEnd] = dateRange;
+        if (dateStart || dateEnd) {
+            list = list.filter(imageInfo => {
+                const itemDate = imageInfo.timestamp
+                    ? new Date(imageInfo.timestamp * 1000).toISOString().slice(0, 10)
+                    : imageInfo.date;
+                if (dateStart && itemDate < dateStart) return false;
+                if (dateEnd && itemDate > dateEnd) return false;
+                return true;
+            });
+        }
         if (compactOutputs) {
             list = compactRelatedOutputs(list);
         }
@@ -604,7 +623,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, compactOutputs, previewLayout.columnCount, settings.showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, dateRange, compactOutputs, previewLayout.columnCount, settings.showDateDivider]);
     const visibleImagesDetailsList = useMemo(
         () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
         [imagesDetailsList, visibleMediaLimit]
@@ -663,7 +682,7 @@ const GalleryImageGrid = () => {
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
         setPendingScrollTarget(null);
-    }, [currentFolder, searchFileName, sortMethod, mediaFilter, compactOutputs, mediaBatchSize]);
+    }, [currentFolder, searchFileName, sortMethod, mediaFilter, dateRange, compactOutputs, mediaBatchSize]);
 
     useEffect(() => {
         if (pendingScrollTarget === null) return;

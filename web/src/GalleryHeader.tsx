@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Flex, AutoComplete, Button, Modal, Segmented, message, Popconfirm, Tooltip, Tree } from 'antd';
+import { Flex, AutoComplete, Button, DatePicker, Modal, Segmented, message, Popconfirm, Tooltip, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { CloseOutlined, CloseSquareFilled, DeleteOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
@@ -45,6 +45,7 @@ const GalleryHeader = () => {
         setSearchFileName,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
+        setDateRange,
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
         compactOutputs, setCompactOutputs,
@@ -253,6 +254,18 @@ const GalleryHeader = () => {
                         ]}
                         value={mediaFilter}
                         onChange={value => setMediaFilter(value as any)}
+                    />
+                    <DatePicker.RangePicker
+                        size="middle"
+                        allowClear
+                        placeholder={['Start date', 'End date']}
+                        onChange={(_, dateStrings) => {
+                            setDateRange([
+                                dateStrings[0] || null,
+                                dateStrings[1] || null,
+                            ]);
+                        }}
+                        style={{ width: 230 }}
                     />
                     <Segmented
                         options={[

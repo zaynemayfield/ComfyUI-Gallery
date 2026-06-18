@@ -48,6 +48,7 @@ export interface SettingsState {
 
 export type GalleryMediaFilter = 'all' | 'images' | 'videos';
 export type GalleryPreviewSize = 'small' | 'medium' | 'large';
+export type GalleryDateRange = [string | null, string | null];
 
 export const DEFAULT_SETTINGS: SettingsState = {
     relativePath: './',
@@ -83,6 +84,8 @@ export interface GalleryContextType {
     setSortMethod: Dispatch<SetStateAction<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>>;
     mediaFilter: GalleryMediaFilter;
     setMediaFilter: Dispatch<SetStateAction<GalleryMediaFilter>>;
+    dateRange: GalleryDateRange;
+    setDateRange: Dispatch<SetStateAction<GalleryDateRange>>;
     previewSize: GalleryPreviewSize;
     setPreviewSize: Dispatch<SetStateAction<GalleryPreviewSize>>;
     mediaBatchSize: 20 | 40 | 60;
@@ -131,6 +134,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [showRawMetadata, setShowRawMetadata] = useState(false);
     const [sortMethod, setSortMethod] = useState<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>("Newest");
     const [mediaFilter, setMediaFilter] = useState<GalleryMediaFilter>('all');
+    const [dateRange, setDateRange] = useState<GalleryDateRange>([null, null]);
     const [previewSize, setPreviewSize] = useState<GalleryPreviewSize>('medium');
     const [mediaBatchSize, setMediaBatchSize] = useState<20 | 40 | 60>(20);
     const [compactOutputs, setCompactOutputs] = useState(false);
@@ -224,6 +228,17 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
         }
+        const [dateStart, dateEnd] = dateRange;
+        if (dateStart || dateEnd) {
+            list = list.filter(imageInfo => {
+                const itemDate = imageInfo.timestamp
+                    ? new Date(imageInfo.timestamp * 1000).toISOString().slice(0, 10)
+                    : imageInfo.date;
+                if (dateStart && itemDate < dateStart) return false;
+                if (dateEnd && itemDate > dateEnd) return false;
+                return true;
+            });
+        }
         if (sortMethod !== 'Name ↑' && sortMethod !== 'Name ↓') {
             list = list.sort((a, b) => (sortMethod === 'Newest' ? (b.timestamp || 0) - (a.timestamp || 0) : (a.timestamp || 0) - (b.timestamp || 0)));
             if (!showDateDivider) return list;
@@ -257,7 +272,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, gridSize.columnCount, showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, dateRange, gridSize.columnCount, showDateDivider]);
 
     // Memoized list of image URLs for preview
     const imagesUrlsLists = useMemo(() =>
@@ -378,6 +393,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         showRawMetadata, setShowRawMetadata,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
+        dateRange, setDateRange,
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
         compactOutputs, setCompactOutputs,
@@ -409,6 +425,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         showRawMetadata,
         sortMethod,
         mediaFilter,
+        dateRange,
         previewSize,
         mediaBatchSize,
         compactOutputs,
