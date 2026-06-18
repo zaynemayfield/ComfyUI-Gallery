@@ -136,6 +136,26 @@ export const ComfyAppApi = {
             return false;
         }
     },
+    renameImage: async (imagePath: string, newName: string) => {
+        try {
+            const response = await app.api.fetchApi("/Gallery/rename", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image_path: imagePath, new_name: newName })
+            });
+            if (response.ok) {
+                console.log(`Image renamed: ${imagePath} -> ${newName}`);
+                return true;
+            } else {
+                const errorText = await response.text();
+                console.error("Failed to rename image:", errorText);
+                return false;
+            }
+        } catch (error) {
+            console.error("Error renaming image:", error);
+            return false;
+        }
+    },
     createFolder: async (parentPath: string, folderName: string) => {
         const response = await app.api.fetchApi("/Gallery/folder/create", {
             method: "POST",

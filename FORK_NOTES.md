@@ -33,6 +33,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added persistent preview video volume, click-to-pause behavior, and a loop toggle in the preview overlay.
 - Persisted preview video mute state so the next preview starts muted when the user muted the previous one.
 - Replaced native preview video controls with a custom row for reliable click-to-pause, mute, volume, loop, and fullscreen controls.
+- Added preview overlay actions for Delete, Move, and Rename, including confirmed batch handling for compacted cards.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.

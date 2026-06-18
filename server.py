@@ -109,6 +109,29 @@ def validate_folder_name(name):
     return name
 
 
+def validate_file_name(name):
+    name = str(name or "").strip()
+    if not name:
+        raise ValueError("File name is required")
+    if name in (".", "..") or "/" in name or "\\" in name or os.path.isabs(name):
+        raise ValueError("File name must be a single file name")
+    return name
+
+
+def resolve_static_file_path(image_url):
+    if not image_url:
+        raise ValueError("image_path is required")
+    if not str(image_url).startswith("/static_gallery/"):
+        raise ValueError("Invalid image_path format")
+
+    relative_path = str(image_url)[len("/static_gallery/"):]
+    static_dir = get_static_gallery_dir()
+    full_image_path = os.path.realpath(os.path.join(static_dir, relative_path))
+    if not is_path_inside(full_image_path, static_dir):
+        raise PermissionError("Access denied: File outside of static directory")
+    return full_image_path, static_dir
+
+
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -380,27 +403,44 @@ async def delete_image(request):
     try:
         data = await request.json()
         image_url = data.get("image_path")
-        if not image_url:
-            return web.Response(status=400, text="image_path is required")
-        if image_url.startswith("/static_gallery/"):
-            relative_path = image_url[len("/static_gallery/"):]
-
-        else:
-            return web.Response(status=400, text="Invalid image_path format")
-        static_route = next((r for r in PromptServer.instance.app.router.routes() if getattr(r, 'name', None) == 'static_gallery_placeholder'), None)
-        if static_route is not None:
-            static_dir = str(static_route.resource._directory)
-        else:
-            static_dir = folder_paths.get_output_directory()
-        full_image_path = os.path.normpath(os.path.join(static_dir, relative_path))
+        full_image_path, static_dir = resolve_static_file_path(image_url)
         if not os.path.exists(full_image_path):
             return web.Response(status=404, text=f"File not found: {full_image_path}")
-        if not is_path_inside(full_image_path, static_dir):
-            return web.Response(status=403, text="Access denied: File outside of static directory")
         os.remove(full_image_path)
         return web.Response(text=f"Image deleted: {image_url}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except PermissionError as e:
+        return web.Response(status=403, text=str(e))
     except Exception as e:
         gallery_log(f"Error deleting image: {e}")
+        return web.Response(status=500, text=str(e))
+
+
+@PromptServer.instance.routes.post("/Gallery/rename")
+async def rename_image(request):
+    """Endpoint to rename a media file within its current folder."""
+    from .gallery_config import gallery_log
+    try:
+        data = await request.json()
+        image_url = data.get("image_path")
+        new_name = validate_file_name(data.get("new_name"))
+        full_image_path, static_dir = resolve_static_file_path(image_url)
+        if not os.path.isfile(full_image_path):
+            return web.Response(status=404, text=f"File not found: {full_image_path}")
+        target_path = os.path.realpath(os.path.join(os.path.dirname(full_image_path), new_name))
+        if not is_path_inside(target_path, static_dir):
+            return web.Response(status=403, text="Access denied: File outside of static directory")
+        if os.path.exists(target_path):
+            return web.Response(status=409, text="Target file already exists")
+        os.rename(full_image_path, target_path)
+        return web.Response(text=f"Image renamed: {image_url}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except PermissionError as e:
+        return web.Response(status=403, text=str(e))
+    except Exception as e:
+        gallery_log(f"Error renaming image: {e}")
         return web.Response(status=500, text=str(e))
 
 @PromptServer.instance.routes.post("/Gallery/move")

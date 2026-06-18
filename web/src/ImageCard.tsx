@@ -83,6 +83,7 @@ function ImageCard({
     index,
     onInfoClick,
     onVideoClick,
+    onPreviewOpen,
     cardWidth = ImageCardWidth,
     cardHeight = ImageCardHeight,
 }: {
@@ -90,6 +91,7 @@ function ImageCard({
     index: number;
     onInfoClick: (image: FileDetails) => void;
     onVideoClick: (image: FileDetails | undefined) => void;
+    onPreviewOpen?: (image: FileDetails, group: FileDetails[]) => void;
     cardWidth?: number;
     cardHeight?: number;
 }) {
@@ -377,6 +379,7 @@ function ImageCard({
                     onClick={() => {
                         // Ensure any leftover media preview state is cleared so this opens as an image
                         try { setPreviewingVideo(undefined); } catch { }
+                        onPreviewOpen?.(currentImage, compactItems);
                         // Trigger the preview
                         document.getElementById(currentImage.url)?.click();
                     }}
@@ -389,6 +392,7 @@ function ImageCard({
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}
                     onClick={() => {
                         try { setPreviewingVideo(undefined); } catch { }
+                        onPreviewOpen?.(currentImage, compactItems);
                         document.getElementById(currentImage.url)?.click();
                     }}
                 >
@@ -408,6 +412,7 @@ function ImageCard({
             </>) : currentImage.type === "3d" ? (
                 <ImageCard3DThumbnail image={currentImage as any} cardWidth={cardWidth} onClick={() => {
                     try { setPreviewingVideo(undefined); } catch { }
+                    onPreviewOpen?.(currentImage, compactItems);
                     document.getElementById(currentImage.url)?.click();
                 }} />
             ) : <>
@@ -427,6 +432,7 @@ function ImageCard({
                     preload="metadata"
                     onLoadedMetadata={(event) => setVideoDuration(event.currentTarget.duration)}
                     onClick={() => {
+                        onPreviewOpen?.(currentImage, compactItems);
                         onVideoClick(currentImage);
                         document.getElementById(currentImage.url)?.click();
                     }}

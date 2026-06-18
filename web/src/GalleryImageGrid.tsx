@@ -1,6 +1,10 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Empty, Image, Slider, Spin } from 'antd';
+import { Button, Empty, Image, Input, message, Modal, Slider, Spin, Tree } from 'antd';
+import type { DataNode } from 'antd/es/tree';
+import DeleteOutlined from '@ant-design/icons/lib/icons/DeleteOutlined';
+import EditOutlined from '@ant-design/icons/lib/icons/EditOutlined';
 import FullscreenOutlined from '@ant-design/icons/lib/icons/FullscreenOutlined';
+import FolderOpenOutlined from '@ant-design/icons/lib/icons/FolderOpenOutlined';
 import MutedOutlined from '@ant-design/icons/lib/icons/MutedOutlined';
 import PauseOutlined from '@ant-design/icons/lib/icons/PauseOutlined';
 import PlayCircleOutlined from '@ant-design/icons/lib/icons/PlayCircleOutlined';
@@ -13,7 +17,7 @@ import { useGalleryContext } from './GalleryContext';
 import { MetadataView } from './MetadataView';
 import { ModelViewer } from './ModelViewer';
 import type { FileDetails } from './types';
-import { BASE_PATH } from "./ComfyAppApi";
+import { BASE_PATH, ComfyAppApi } from "./ComfyAppApi";
 import { getFolderMediaList } from './galleryFolderUtils';
 import type { GalleryPreviewSize } from './GalleryContext';
 
@@ -105,6 +109,57 @@ const compactRelatedOutputs = (items: FileDetails[]): CompactFileDetails[] => {
 
 const getPreviewItems = (items: FileDetails[]) => {
     return items.flatMap(item => (item as CompactFileDetails).compactItems ?? [item]);
+};
+
+const getFileStemAndExtension = (name: string) => {
+    const dotIndex = name.lastIndexOf('.');
+    if (dotIndex <= 0) return { stem: name, extension: '' };
+    return {
+        stem: name.slice(0, dotIndex),
+        extension: name.slice(dotIndex),
+    };
+};
+
+const getFilePath = (image: FileDetails, fallbackFolder: string) => {
+    const folder = image.sourceFolder || fallbackFolder;
+    return folder ? `${folder}/${image.name}` : image.name;
+};
+
+const buildRenamedFileName = (image: FileDetails, newValue: string, isCompactGroup: boolean) => {
+    const trimmed = newValue.trim();
+    const { stem, extension } = getFileStemAndExtension(image.name);
+    if (!isCompactGroup && trimmed.includes('.')) return trimmed;
+    const suffix = isCompactGroup && stem.endsWith('-audio') ? '-audio' : '';
+    return `${trimmed}${suffix}${extension}`;
+};
+
+const getDefaultRenameValue = (image: FileDetails, isCompactGroup: boolean) => {
+    const { stem } = getFileStemAndExtension(image.name);
+    return isCompactGroup && stem.endsWith('-audio') ? stem.slice(0, -6) : stem;
+};
+
+const buildFolderTreeData = (folderKeys: string[]): DataNode[] => {
+    const roots: DataNode[] = [];
+    const nodeMap = new Map<string, DataNode>();
+    folderKeys
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach(folderKey => {
+            const parts = folderKey.split(/[\\/]+/).filter(Boolean);
+            let currentPath = '';
+            let siblings = roots;
+            parts.forEach(part => {
+                currentPath = currentPath ? `${currentPath}/${part}` : part;
+                let node = nodeMap.get(currentPath);
+                if (!node) {
+                    node = { key: currentPath, title: part, children: [] };
+                    nodeMap.set(currentPath, node);
+                    siblings.push(node);
+                }
+                siblings = (node.children ??= []);
+            });
+        });
+    return roots;
 };
 
 const takeMediaBatch = (items: FileDetails[], limit: number) => {
@@ -289,6 +344,186 @@ const PreviewVideo = ({ image }: { image: FileDetails }) => {
     );
 };
 
+const PreviewActions = ({
+    currentImage,
+    actionItems,
+    currentFolder,
+    folderKeys,
+    onDone,
+}: {
+    currentImage: FileDetails;
+    actionItems: FileDetails[];
+    currentFolder: string;
+    folderKeys: string[];
+    onDone: () => void;
+}) => {
+    const [moveOpen, setMoveOpen] = useState(false);
+    const [selectedFolder, setSelectedFolder] = useState<string | undefined>(currentImage.sourceFolder || currentFolder);
+    const [busy, setBusy] = useState(false);
+    const isCompactGroup = actionItems.length > 1;
+    const treeData = useMemo(() => buildFolderTreeData(folderKeys), [folderKeys]);
+    const itemLabel = isCompactGroup ? `${actionItems.length} compacted files` : currentImage.name;
+
+    const runBatchAction = async (label: string, action: (image: FileDetails) => Promise<boolean>) => {
+        setBusy(true);
+        try {
+            let completed = 0;
+            for (const item of actionItems) {
+                if (await action(item)) completed++;
+            }
+            if (completed === actionItems.length) {
+                message.success(`${label} ${completed} file${completed === 1 ? '' : 's'}.`);
+                onDone();
+            } else {
+                message.error(`${label} ${completed} of ${actionItems.length} files.`);
+            }
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const confirmDelete = () => {
+        Modal.confirm({
+            title: isCompactGroup ? 'Delete compacted files?' : 'Delete file?',
+            content: isCompactGroup
+                ? `Delete all ${actionItems.length} files in this compacted card? This cannot be undone.`
+                : `Delete ${currentImage.name}? This cannot be undone.`,
+            okText: 'Delete',
+            okButtonProps: { danger: true },
+            onOk: () => runBatchAction('Deleted', image => ComfyAppApi.deleteImage(image.url)),
+        });
+    };
+
+    const confirmRename = () => {
+        let renameValue = getDefaultRenameValue(currentImage, isCompactGroup);
+        Modal.confirm({
+            title: isCompactGroup ? 'Rename compacted files' : 'Rename file',
+            content: (
+                <Input
+                    autoFocus
+                    defaultValue={renameValue}
+                    placeholder={isCompactGroup ? 'New base name' : 'New name'}
+                    onChange={event => { renameValue = event.target.value; }}
+                    onPressEnter={event => {
+                        event.preventDefault();
+                    }}
+                />
+            ),
+            okText: 'Rename',
+            onOk: async () => {
+                const nextValue = renameValue.trim();
+                if (!nextValue || /[\\/]/.test(nextValue)) {
+                    message.error('Use a single file name without slashes.');
+                    throw new Error('Invalid file name');
+                }
+                await runBatchAction('Renamed', image => ComfyAppApi.renameImage(
+                    image.url,
+                    buildRenamedFileName(image, nextValue, isCompactGroup)
+                ));
+            },
+        });
+    };
+
+    const confirmMove = () => {
+        if (!selectedFolder) return;
+        runBatchAction('Moved', image => {
+            const sourcePath = getFilePath(image, currentFolder);
+            const targetPath = `${selectedFolder}/${image.name}`;
+            if (sourcePath === targetPath) return Promise.resolve(true);
+            return ComfyAppApi.moveImage(sourcePath, targetPath);
+        }).then(() => setMoveOpen(false));
+    };
+
+    return (
+        <>
+            <div
+                onClick={event => event.stopPropagation()}
+                style={{
+                    width: 'min(92vw, 760px)',
+                    minHeight: 44,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    background: 'rgba(0, 0, 0, 0.72)',
+                    border: '1px solid rgba(255, 255, 255, 0.16)',
+                }}
+            >
+                <Button danger icon={<DeleteOutlined />} loading={busy} onClick={confirmDelete}>
+                    Delete
+                </Button>
+                <Button icon={<FolderOpenOutlined />} loading={busy} onClick={() => setMoveOpen(true)}>
+                    Move
+                </Button>
+                <Button icon={<EditOutlined />} loading={busy} onClick={confirmRename}>
+                    Rename
+                </Button>
+            </div>
+            <Modal
+                open={moveOpen}
+                title={isCompactGroup ? 'Move compacted files' : 'Move file'}
+                okText="Move"
+                okButtonProps={{ disabled: !selectedFolder, loading: busy }}
+                onOk={confirmMove}
+                onCancel={() => setMoveOpen(false)}
+            >
+                <div style={{ marginBottom: 10, color: '#666' }}>
+                    {isCompactGroup ? `Move all ${actionItems.length} files from this compacted card.` : `Move ${itemLabel}.`}
+                </div>
+                <Tree
+                    blockNode
+                    defaultExpandAll
+                    selectedKeys={selectedFolder ? [selectedFolder] : []}
+                    treeData={treeData}
+                    onSelect={keys => setSelectedFolder(String(keys[0] ?? ''))}
+                    style={{ maxHeight: 360, overflow: 'auto' }}
+                />
+            </Modal>
+        </>
+    );
+};
+
+const PreviewFrame = ({
+    children,
+    currentImage,
+    actionItems,
+    currentFolder,
+    folderKeys,
+    onDone,
+}: {
+    children: React.ReactNode;
+    currentImage: FileDetails;
+    actionItems: FileDetails[];
+    currentFolder: string;
+    folderKeys: string[];
+    onDone: () => void;
+}) => (
+    <div
+        style={{
+            maxWidth: '96vw',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+        }}
+    >
+        <div style={{ maxHeight: 'calc(92vh - 58px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {children}
+        </div>
+        <PreviewActions
+            currentImage={currentImage}
+            actionItems={actionItems}
+            currentFolder={currentFolder}
+            folderKeys={folderKeys}
+            onDone={onDone}
+        />
+    </div>
+);
+
 const GalleryImageGrid = () => {
     const {
         data,
@@ -308,6 +543,7 @@ const GalleryImageGrid = () => {
         setShowRawMetadata,
         settings,
         loading,
+        runAsync,
         previewSize,
         mediaBatchSize,
         compactOutputs
@@ -316,6 +552,7 @@ const GalleryImageGrid = () => {
     const gridRef = useRef<any>(null);
     const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
     const [pendingScrollTarget, setPendingScrollTarget] = useState<DateDividerRow | null>(null);
+    const [previewActionGroup, setPreviewActionGroup] = useState<FileDetails[] | undefined>(undefined);
     const previewLayout = useMemo(
         () => getPreviewLayout(autoSizer.width, previewSize),
         [autoSizer.width, previewSize]
@@ -622,6 +859,9 @@ const GalleryImageGrid = () => {
                     cardHeight={previewLayout.cardHeight}
                     onInfoClick={handleInfoClick}
                     onVideoClick={(selectedImage) => setPreviewingVideo(selectedImage?.name)}
+                    onPreviewOpen={(selectedImage, group) => {
+                        setPreviewActionGroup(group.length > 1 ? group : [selectedImage]);
+                    }}
                 />
             </div>
         );
@@ -639,6 +879,30 @@ const GalleryImageGrid = () => {
         getPreviewItems(visibleImagesDetailsList).filter(isMediaItem),
         [visibleImagesDetailsList]
     );
+
+    const folderKeys = useMemo(() => Object.keys(data?.folders ?? {}), [data]);
+
+    const getPreviewActionItems = useCallback((image: FileDetails) => {
+        if (previewActionGroup?.some(item => item.url === image.url)) {
+            return previewActionGroup;
+        }
+        const compactItem = visibleImagesDetailsList.find(item =>
+            (item as CompactFileDetails).compactItems?.some(compactImage => compactImage.url === image.url)
+        ) as CompactFileDetails | undefined;
+        return compactItem?.compactItems?.length ? compactItem.compactItems : [image];
+    }, [previewActionGroup, visibleImagesDetailsList]);
+
+    const closePreviewOverlay = useCallback(() => {
+        document.querySelector<HTMLElement>('.ant-image-preview-close')?.click();
+        setPreviewingVideo(undefined);
+        setImageInfoName(undefined);
+        setPreviewActionGroup(undefined);
+    }, [setImageInfoName, setPreviewingVideo]);
+
+    const handlePreviewActionDone = useCallback(() => {
+        closePreviewOverlay();
+        runAsync();
+    }, [closePreviewOverlay, runAsync]);
 
     const loadNextBatch = useCallback(() => {
         setVisibleMediaLimit(currentLimit => {
@@ -702,8 +966,20 @@ const GalleryImageGrid = () => {
         } else {
             let image = previewableImages[info.current];
             if (!image) return originalNode;
+            const actionItems = getPreviewActionItems(image);
+            const renderWithActions = (node: React.ReactNode) => (
+                <PreviewFrame
+                    currentImage={image}
+                    actionItems={actionItems}
+                    currentFolder={currentFolder}
+                    folderKeys={folderKeys}
+                    onDone={handlePreviewActionDone}
+                >
+                    {node}
+                </PreviewFrame>
+            );
             if (image.type === 'audio') {
-                return (
+                return renderWithActions(
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
                         <h2 style={{ color: 'white', marginBottom: '24px', maxWidth: '80%', textAlign: 'center', wordWrap: 'break-word' }}>
                             {image.name}
@@ -725,7 +1001,7 @@ const GalleryImageGrid = () => {
                 );
             }
             if (image.type === '3d') {
-                return (
+                return renderWithActions(
                     <div
                         style={{ width: '80vw', maxWidth: 1000, height: '70vh', cursor: 'grab' }}
                         onMouseDown={stopPropagation}
@@ -736,11 +1012,22 @@ const GalleryImageGrid = () => {
                 );
             }
             if (image.type === 'media') {
-                return <PreviewVideo image={image} />;
+                return renderWithActions(<PreviewVideo image={image} />);
             }
-            return originalNode;
+            return renderWithActions(originalNode);
         }
-    }, [imageInfoName, previewableImages, showRawMetadata, setShowRawMetadata, settings.autoPlayVideos, stopPropagation]);
+    }, [
+        imageInfoName,
+        previewableImages,
+        getPreviewActionItems,
+        currentFolder,
+        folderKeys,
+        handlePreviewActionDone,
+        showRawMetadata,
+        setShowRawMetadata,
+        settings.autoPlayVideos,
+        stopPropagation
+    ]);
 
     // Memoized onChange for InfoView
     const infoOnChange = useCallback((current: number, prevCurrent: number) => {
@@ -811,7 +1098,10 @@ const GalleryImageGrid = () => {
                     toolbarRender: () => previewingVideo != undefined ? null : undefined,
                     destroyOnClose: true,
                     afterOpenChange(open) {
-                        if (!open) setPreviewingVideo(undefined);
+                        if (!open) {
+                            setPreviewingVideo(undefined);
+                            setPreviewActionGroup(undefined);
+                        }
                     },
                 }}
             >
