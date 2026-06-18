@@ -41,6 +41,7 @@ python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_confi
   - `web/node_modules`
   - `__pycache__`
   - `.thumbnail_cache`
+  - `.gallery_index_cache`
 
 ## Manual Test
 

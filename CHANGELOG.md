@@ -15,6 +15,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Preview overlay actions for delete, move, rename, metadata, and raw metadata.
 - Persistent video volume, mute, and loop controls.
 - Lazy cached video thumbnails.
+- Persistent server-side media index for faster refreshes and repeat browsing from other clients.
 - Video duration metadata when `ffprobe` is available.
 - Include Subfolders toggle.
 - Date section navigation.

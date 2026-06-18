@@ -5,3 +5,4 @@ web/node_modules/
 web/.vite/
 web/dist/**/*.map
 .thumbnail_cache/
+.gallery_index_cache/

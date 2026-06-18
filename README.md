@@ -15,7 +15,7 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 - Shows image metadata and raw metadata in the main preview overlay.
 - Lets you create, rename, move, and delete folders from the gallery.
 - Supports multi-select bulk move/delete with compact-group confirmation.
-- Uses cached video thumbnails for faster browsing.
+- Uses cached video thumbnails and a server-side media index for faster browsing.
 - Keeps gallery access scoped to ComfyUI's output directory for safer public distribution.
 
 ## Feature Highlights
@@ -27,7 +27,7 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 | Compact mode | Groups related media outputs and lets users cycle through grouped files |
 | Preview | Fit-to-screen media, video controls, persistent mute/volume, loop, metadata panel, raw metadata |
 | File actions | Delete, move, rename, folder create/rename/move/delete, bulk delete/move |
-| Performance | Virtualized grid, 20/40/60 loading batches, cached video thumbnails |
+| Performance | Virtualized grid, 20/40/60 loading batches, cached video thumbnails, persistent metadata index |
 | Safety | Output-directory path boundary checks, no symlink following for static gallery route |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for a fuller walkthrough.
@@ -115,7 +115,7 @@ Validate Python files:
 python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_config.py gallery_node.py metadata_extractor.py __init__.py
 ```
 
-Do not commit generated folders such as `web/node_modules`, `__pycache__`, or `.thumbnail_cache`.
+Do not commit generated folders such as `web/node_modules`, `__pycache__`, `.thumbnail_cache`, or `.gallery_index_cache`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and release guidance.
 
