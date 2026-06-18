@@ -4,7 +4,7 @@
     "buttonLabel": "Launch ComfyUI Gallery",
     "showDateDivider": true,
     "floatingButton": false,
-    "autoPlayVideos": true,
+    "autoPlayVideos": false,
     "hideOpenButton": false,
     "darkMode": false,
     "galleryShortcut": true,

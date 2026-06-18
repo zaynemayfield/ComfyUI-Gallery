@@ -2,8 +2,8 @@ import { Button, Image, Typography } from 'antd';
 import type { FileDetails } from './types';
 import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
 import SoundOutlined from '@ant-design/icons/lib/icons/SoundOutlined';
-import React, { useRef, useState } from 'react';
-import { useDrag, useEventListener } from 'ahooks';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDrag } from 'ahooks';
 import { useGalleryContext } from './GalleryContext';
 import { BASE_PATH } from './ComfyAppApi';
 import { use3DThumbnail } from './GlobalModelRenderer';
@@ -91,7 +91,9 @@ function ImageCard({
 }) {
     const { settings, selectedImages, setSelectedImages, setPreviewingVideo } = useGalleryContext();
     const dragRef = useRef<HTMLDivElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const [dragging, setDragging] = useState(false);
+    const [videoInView, setVideoInView] = useState(false);
     const mediaBorderColor = image.type === 'media'
         ? 'rgba(250, 173, 20, 0.65)'
         : image.type === 'image'
@@ -111,6 +113,29 @@ function ImageCard({
             onDragEnd: () => setDragging(false),
         }
     );
+
+    useEffect(() => {
+        if (image.type !== 'media' || !dragRef.current) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => setVideoInView(entry.isIntersecting),
+            { threshold: 0.35 }
+        );
+        observer.observe(dragRef.current);
+
+        return () => observer.disconnect();
+    }, [image.type]);
+
+    useEffect(() => {
+        if (image.type !== 'media' || !videoRef.current) return;
+
+        const video = videoRef.current;
+        if (settings.autoPlayVideos && videoInView) {
+            video.play().catch(() => undefined);
+        } else {
+            video.pause();
+        }
+    }, [image.type, settings.autoPlayVideos, videoInView]);
 
     // Use ctrlKey from click event, not global state
     const handleCardClick = (event: React.MouseEvent) => {
@@ -232,6 +257,7 @@ function ImageCard({
                 }} />
             ) : <>
                 <video
+                    ref={videoRef}
                     style={{
                         ...(settings.videoThumbFit === 'height'
                             ? { maxHeight: cardHeight }
@@ -239,10 +265,10 @@ function ImageCard({
                         cursor: "pointer"
                     }}
                     src={`${BASE_PATH}${image.url}`}
-                    autoPlay={settings.autoPlayVideos}
+                    autoPlay={false}
                     loop={settings.autoPlayVideos}
                     muted={true}
-                    preload={!settings.autoPlayVideos ? undefined : "none"}
+                    preload="metadata"
                     onClick={() => {
                         onVideoClick(image.name);
                         document.getElementById(image.url)?.click();
