@@ -436,6 +436,7 @@ const GalleryHeader = () => {
             {showFolderBar && <GalleryFolderBar />}
             <Modal
                 open={moveModalOpen}
+                className="selectedImagesActionButton"
                 title={`Move ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'}`}
                 okText="Move"
                 okButtonProps={{ disabled: !moveTargetFolder || selectedImages.length === 0, loading: bulkMoving }}

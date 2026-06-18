@@ -371,6 +371,8 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     }, [selectedImages]);
 
     useClickAway((event) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('.selectedImagesActionButton, .ant-modal, .ant-popover, .ant-picker-dropdown')) return;
         setSelectedImages([]);
     }, [...imageCards, ...folders, ...selectedImagesActionButtons])
 
