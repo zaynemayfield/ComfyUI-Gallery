@@ -568,7 +568,31 @@ const PreviewActions = ({
 const PreviewMetadataPanel = ({ image }: { image: FileDetails }) => {
     const { settings } = useGalleryContext();
     const [showRaw, setShowRaw] = useState(false);
-    const meta = useMemo(() => parseComfyMetadata(image.metadata), [image.metadata]);
+    const [metadata, setMetadata] = useState(image.metadata);
+    const [loadingMetadata, setLoadingMetadata] = useState(false);
+    const meta = useMemo(() => parseComfyMetadata(metadata), [metadata]);
+    useEffect(() => {
+        let cancelled = false;
+        setMetadata(image.metadata);
+        setLoadingMetadata(true);
+        ComfyAppApi.fetchMetadata(image.url)
+            .then(async (response: Response) => {
+                if (!response.ok) return null;
+                return response.json();
+            })
+            .then((payload: { metadata?: FileDetails['metadata'] } | null) => {
+                if (!cancelled && payload?.metadata) {
+                    setMetadata(payload.metadata);
+                }
+            })
+            .catch(() => { })
+            .finally(() => {
+                if (!cancelled) setLoadingMetadata(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [image.url, image.metadata]);
     const metadataItems = useMemo(() => Object.entries(meta).map(([key, value]) => ({
         label: <Typography.Text strong>{key}</Typography.Text>,
         children: (
@@ -586,7 +610,7 @@ const PreviewMetadataPanel = ({ image }: { image: FileDetails }) => {
         <Card
             size="small"
             title="Metadata"
-            extra={<Button size="small" onClick={() => setShowRaw(value => !value)}>{showRaw ? 'Parsed' : 'Raw'}</Button>}
+            extra={<Button size="small" loading={loadingMetadata} onClick={() => setShowRaw(value => !value)}>{showRaw ? 'Parsed' : 'Raw'}</Button>}
             style={{
                 width: 560,
                 maxWidth: '42vw',
@@ -600,7 +624,7 @@ const PreviewMetadataPanel = ({ image }: { image: FileDetails }) => {
             {showRaw ? (
                 <ReactJsonView
                     theme={settings.darkMode ? "apathy" : "apathy:inverted"}
-                    src={image.metadata || {}}
+                    src={metadata || {}}
                     name={false}
                     collapsed={2}
                     enableClipboard

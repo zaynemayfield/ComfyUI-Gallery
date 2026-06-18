@@ -83,6 +83,8 @@ export const ComfyAppApi = {
         }),
     fetchImages: (relativePath?: string) =>
         app.api.fetchApi(`/Gallery/images?relative_path=${encodeURIComponent(relativePath ?? './')}`),
+    fetchMetadata: (imagePath: string) =>
+        app.api.fetchApi(`/Gallery/metadata?path=${encodeURIComponent(imagePath)}`),
     onFileChange: (cb: GalleryEventCallback) =>
         app.api.addEventListener("Gallery.file_change", cb),
     onUpdate: (cb: GalleryEventCallback) =>

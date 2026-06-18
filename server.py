@@ -16,8 +16,9 @@ import hashlib
 import subprocess
 
 from .folder_monitor import FileSystemMonitor
-from .folder_scanner import _scan_for_images, DEFAULT_EXTENSIONS
+from .folder_scanner import _scan_for_images, DEFAULT_EXTENSIONS, get_video_duration
 from .gallery_config import disable_logs, gallery_log
+from .metadata_extractor import buildMetadata, get_size
 
 # Add ComfyUI root to sys.path HERE
 import sys
@@ -224,6 +225,59 @@ def json_response(request, data):
     return web.Response(body=body, headers=headers, content_type="application/json")
 
 
+def compact_metadata(metadata):
+    if not isinstance(metadata, dict):
+        return metadata
+
+    compact = {}
+    if "fileinfo" in metadata:
+        compact["fileinfo"] = metadata["fileinfo"]
+    if "prompt" in metadata:
+        compact["prompt"] = metadata["prompt"]
+
+    for key, value in metadata.items():
+        if key in ("fileinfo", "prompt", "workflow"):
+            continue
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            compact[key] = value
+
+    return compact
+
+
+def compact_gallery_folders(folders):
+    compact_folders = {}
+    for folder_name, files in folders.items():
+        compact_files = {}
+        for filename, file_data in files.items():
+            if isinstance(file_data, dict):
+                item = dict(file_data)
+                item["metadata"] = compact_metadata(item.get("metadata", {}))
+                compact_files[filename] = item
+            else:
+                compact_files[filename] = file_data
+        compact_folders[folder_name] = compact_files
+    return compact_folders
+
+
+def build_full_metadata(full_path):
+    timestamp = os.path.getmtime(full_path)
+    date_str = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+    metadata = {
+        "fileinfo": {
+            "filename": full_path,
+            "resolution": "",
+            "date": date_str,
+            "size": str(get_size(full_path)),
+        }
+    }
+    ext = os.path.splitext(full_path)[1].lower()
+    if ext in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        _, _, metadata = buildMetadata(full_path)
+    elif ext in (".mp4", ".webm", ".mov"):
+        metadata["fileinfo"]["duration"] = get_video_duration(full_path)
+    return metadata
+
+
 @PromptServer.instance.routes.get("/Gallery/settings")
 async def get_settings(request):
     return web.json_response(load_settings())
@@ -261,6 +315,22 @@ async def get_video_thumbnail(request):
         return web.Response(status=504, text="Video thumbnail generation timed out")
     except Exception as e:
         gallery_log(f"Error generating video thumbnail: {e}")
+        return web.Response(status=500, text=str(e))
+
+
+@PromptServer.instance.routes.get("/Gallery/metadata")
+async def get_gallery_metadata(request):
+    try:
+        image_url = request.rel_url.query.get("path", "")
+        full_path, _ = resolve_static_file_path(image_url)
+        if not os.path.isfile(full_path):
+            return web.Response(status=404, text="File not found")
+        metadata = sanitize_json_data(build_full_metadata(full_path))
+        return json_response(request, {"metadata": metadata})
+    except (ValueError, PermissionError) as e:
+        return web.Response(status=400, text=str(e))
+    except Exception as e:
+        gallery_log(f"Error loading metadata: {e}")
         return web.Response(status=500, text=str(e))
 
 @PromptServer.instance.routes.get("/Gallery/images")
@@ -301,7 +371,7 @@ async def get_gallery_images(request):
                     traceback.print_exc()
                     return web.Response(status=500, text=str(folders_with_metadata))
 
-                sanitized_folders = sanitize_json_data(folders_with_metadata)
+                sanitized_folders = sanitize_json_data(compact_gallery_folders(folders_with_metadata))
                 return json_response(request, {"folders": sanitized_folders})
             except Exception as e:
                     gallery_log(f"Error in on_scan_complete: {e}")
