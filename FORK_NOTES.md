@@ -15,6 +15,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Replaced the left header toggle with a compact icon that shows or hides the horizontal folder navigation.
 - Restyled horizontal folder navigation into one icon-led row using separators instead of section labels.
 - Updated folder selection so parent folders show media from their descendant folders.
+- Added a folder actions row for the current folder with create, rename, move, and delete controls guarded by backend path checks.
 
 ### ComfyUI toolbar entry point
 

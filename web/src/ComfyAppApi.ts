@@ -136,6 +136,42 @@ export const ComfyAppApi = {
             return false;
         }
     },
+    createFolder: async (parentPath: string, folderName: string) => {
+        const response = await app.api.fetchApi("/Gallery/folder/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ parent_path: parentPath, folder_name: folderName })
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return true;
+    },
+    deleteFolder: async (folderPath: string) => {
+        const response = await app.api.fetchApi("/Gallery/folder/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folder_path: folderPath })
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return true;
+    },
+    renameFolder: async (folderPath: string, newName: string) => {
+        const response = await app.api.fetchApi("/Gallery/folder/rename", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folder_path: folderPath, new_name: newName })
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return true;
+    },
+    moveFolder: async (folderPath: string, targetParentPath: string) => {
+        const response = await app.api.fetchApi("/Gallery/folder/move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folder_path: folderPath, target_parent_path: targetParentPath })
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return true;
+    },
     // Settings endpoints
     fetchSettings: async () => {
         try {

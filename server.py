@@ -67,6 +67,48 @@ def resolve_gallery_path(relative_path="./"):
     return full_path, relative_path
 
 
+def get_static_gallery_dir():
+    static_route = next((r for r in PromptServer.instance.app.router.routes() if getattr(r, 'name', None) == 'static_gallery_placeholder'), None)
+    if static_route is not None:
+        return str(static_route.resource._directory)
+    return folder_paths.get_output_directory()
+
+
+def resolve_static_relative_path(relative_path="", allow_root=False):
+    static_dir = get_static_gallery_dir()
+    if relative_path is None:
+        relative_path = ""
+
+    relative_path = str(relative_path).strip().replace("\\", os.sep)
+    static_dir_basename = os.path.basename(os.path.normpath(static_dir))
+    if relative_path == static_dir_basename:
+        relative_path = ""
+    elif relative_path.startswith(static_dir_basename + os.sep):
+        relative_path = relative_path[len(static_dir_basename + os.sep):]
+    if relative_path in ("", ".", "./"):
+        if not allow_root:
+            raise ValueError("Root folder is not allowed for this operation")
+        full_path = os.path.realpath(static_dir)
+    else:
+        if os.path.isabs(relative_path):
+            raise ValueError("Absolute paths are not allowed")
+        full_path = os.path.realpath(os.path.join(static_dir, relative_path))
+
+    if not is_path_inside(full_path, static_dir):
+        raise ValueError("Folder path must stay inside the gallery root")
+
+    return full_path, static_dir
+
+
+def validate_folder_name(name):
+    name = str(name or "").strip()
+    if not name:
+        raise ValueError("Folder name is required")
+    if name in (".", "..") or "/" in name or "\\" in name or os.path.isabs(name):
+        raise ValueError("Folder name must be a single folder name")
+    return name
+
+
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -230,6 +272,106 @@ async def stop_gallery_monitor(request):
 async def newSettings(request):
     # This route is no longer used
     return web.Response(status=200)
+
+@PromptServer.instance.routes.post("/Gallery/folder/create")
+async def create_folder(request):
+    from .gallery_config import gallery_log
+    try:
+        data = await request.json()
+        parent_path = data.get("parent_path", "")
+        folder_name = validate_folder_name(data.get("folder_name"))
+        parent_full_path, _ = resolve_static_relative_path(parent_path, allow_root=True)
+        if not os.path.isdir(parent_full_path):
+            return web.Response(status=404, text="Parent folder not found")
+        target_path = os.path.realpath(os.path.join(parent_full_path, folder_name))
+        if not is_path_inside(target_path, get_static_gallery_dir()):
+            return web.Response(status=403, text="Access denied: Folder outside of gallery root")
+        if os.path.exists(target_path):
+            return web.Response(status=409, text="Folder already exists")
+        os.makedirs(target_path, exist_ok=False)
+        return web.Response(text=f"Folder created: {folder_name}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except Exception as e:
+        gallery_log(f"Error creating folder: {e}")
+        return web.Response(status=500, text=str(e))
+
+
+@PromptServer.instance.routes.post("/Gallery/folder/delete")
+async def delete_folder(request):
+    from .gallery_config import gallery_log
+    try:
+        data = await request.json()
+        folder_path = data.get("folder_path", "")
+        full_folder_path, static_dir = resolve_static_relative_path(folder_path)
+        if os.path.normcase(os.path.realpath(full_folder_path)) == os.path.normcase(os.path.realpath(static_dir)):
+            return web.Response(status=400, text="Cannot delete the gallery root")
+        if not os.path.isdir(full_folder_path):
+            return web.Response(status=404, text="Folder not found")
+        shutil.rmtree(full_folder_path)
+        return web.Response(text=f"Folder deleted: {folder_path}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except Exception as e:
+        gallery_log(f"Error deleting folder: {e}")
+        return web.Response(status=500, text=str(e))
+
+
+@PromptServer.instance.routes.post("/Gallery/folder/rename")
+async def rename_folder(request):
+    from .gallery_config import gallery_log
+    try:
+        data = await request.json()
+        folder_path = data.get("folder_path", "")
+        new_name = validate_folder_name(data.get("new_name"))
+        full_folder_path, static_dir = resolve_static_relative_path(folder_path)
+        if os.path.normcase(os.path.realpath(full_folder_path)) == os.path.normcase(os.path.realpath(static_dir)):
+            return web.Response(status=400, text="Cannot rename the gallery root")
+        if not os.path.isdir(full_folder_path):
+            return web.Response(status=404, text="Folder not found")
+        target_path = os.path.realpath(os.path.join(os.path.dirname(full_folder_path), new_name))
+        if not is_path_inside(target_path, static_dir):
+            return web.Response(status=403, text="Access denied: Folder outside of gallery root")
+        if os.path.exists(target_path):
+            return web.Response(status=409, text="Target folder already exists")
+        os.rename(full_folder_path, target_path)
+        return web.Response(text=f"Folder renamed: {folder_path}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except Exception as e:
+        gallery_log(f"Error renaming folder: {e}")
+        return web.Response(status=500, text=str(e))
+
+
+@PromptServer.instance.routes.post("/Gallery/folder/move")
+async def move_folder(request):
+    from .gallery_config import gallery_log
+    try:
+        data = await request.json()
+        folder_path = data.get("folder_path", "")
+        target_parent_path = data.get("target_parent_path", "")
+        full_folder_path, static_dir = resolve_static_relative_path(folder_path)
+        full_target_parent_path, _ = resolve_static_relative_path(target_parent_path, allow_root=True)
+        if os.path.normcase(os.path.realpath(full_folder_path)) == os.path.normcase(os.path.realpath(static_dir)):
+            return web.Response(status=400, text="Cannot move the gallery root")
+        if not os.path.isdir(full_folder_path):
+            return web.Response(status=404, text="Folder not found")
+        if not os.path.isdir(full_target_parent_path):
+            return web.Response(status=404, text="Target parent folder not found")
+        if is_path_inside(full_target_parent_path, full_folder_path):
+            return web.Response(status=400, text="Cannot move a folder into itself")
+        target_path = os.path.realpath(os.path.join(full_target_parent_path, os.path.basename(full_folder_path)))
+        if not is_path_inside(target_path, static_dir):
+            return web.Response(status=403, text="Access denied: Folder outside of gallery root")
+        if os.path.exists(target_path):
+            return web.Response(status=409, text="Target folder already exists")
+        shutil.move(full_folder_path, target_path)
+        return web.Response(text=f"Folder moved: {folder_path}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except Exception as e:
+        gallery_log(f"Error moving folder: {e}")
+        return web.Response(status=500, text=str(e))
 
 @PromptServer.instance.routes.post("/Gallery/delete")
 async def delete_image(request):
