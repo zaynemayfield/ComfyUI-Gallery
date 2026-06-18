@@ -95,6 +95,8 @@ export interface GalleryContextType {
     setMediaBatchSize: Dispatch<SetStateAction<20 | 40 | 60>>;
     compactOutputs: boolean;
     setCompactOutputs: Dispatch<SetStateAction<boolean>>;
+    includeSubfolders: boolean;
+    setIncludeSubfolders: Dispatch<SetStateAction<boolean>>;
     imageInfoName: string | undefined;
     setImageInfoName: Dispatch<SetStateAction<string | undefined>>;
     open: boolean;
@@ -142,6 +144,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [previewSize, setPreviewSize] = useState<GalleryPreviewSize>('medium');
     const [mediaBatchSize, setMediaBatchSize] = useState<20 | 40 | 60>(20);
     const [compactOutputs, setCompactOutputs] = useState(false);
+    const [includeSubfolders, setIncludeSubfolders] = useState(true);
     const [imageInfoName, setImageInfoName] = useState<string | undefined>(undefined);
     const [open, setOpen] = useState(false);
     const [previewingVideo, setPreviewingVideo] = useState<string | undefined>(undefined);
@@ -222,7 +225,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
 
     // Memoized list of all images in the current folder
     const imagesDetailsList = useMemo(() => {
-        let list: FileDetails[] = getFolderMediaList(data, currentFolder);
+        let list: FileDetails[] = getFolderMediaList(data, currentFolder, includeSubfolders);
         if (mediaFilter === 'images') {
             list = list.filter(imageInfo => imageInfo.type === 'image');
         } else if (mediaFilter === 'videos') {
@@ -275,7 +278,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, gridSize.columnCount, showDateDivider]);
+    }, [currentFolder, data, includeSubfolders, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, gridSize.columnCount, showDateDivider]);
 
     // Memoized list of image URLs for preview
     const imagesUrlsLists = useMemo(() =>
@@ -403,6 +406,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
         compactOutputs, setCompactOutputs,
+        includeSubfolders, setIncludeSubfolders,
         imageInfoName, setImageInfoName,
         open, setOpen,
         previewingVideo, setPreviewingVideo,
@@ -436,6 +440,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         previewSize,
         mediaBatchSize,
         compactOutputs,
+        includeSubfolders,
         imageInfoName,
         open,
         previewingVideo,

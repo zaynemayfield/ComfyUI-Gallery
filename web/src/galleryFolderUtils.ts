@@ -37,8 +37,9 @@ export function getDescendantFolderKeys(data: FilesTree | undefined, folder: str
     return getFolderKeys(data).filter(key => key === folder || key.startsWith(prefix));
 }
 
-export function getFolderMediaList(data: FilesTree | undefined, folder: string): GalleryFileDetails[] {
-    return getDescendantFolderKeys(data, folder).flatMap(sourceFolder =>
+export function getFolderMediaList(data: FilesTree | undefined, folder: string, includeSubfolders = true): GalleryFileDetails[] {
+    const folderKeys = includeSubfolders ? getDescendantFolderKeys(data, folder) : [folder];
+    return folderKeys.flatMap(sourceFolder =>
         Object.values(data?.folders?.[sourceFolder] ?? {}).map(item => ({
             ...item,
             sourceFolder,

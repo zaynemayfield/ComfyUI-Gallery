@@ -707,7 +707,8 @@ const GalleryImageGrid = () => {
         runAsync,
         previewSize,
         mediaBatchSize,
-        compactOutputs
+        compactOutputs,
+        includeSubfolders
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<any>(null);
@@ -720,7 +721,7 @@ const GalleryImageGrid = () => {
     );
     const showDateSections = settings.showDateDivider && searchFileName.trim() === "";
     const imagesDetailsList = useMemo(() => {
-        let list: FileDetails[] = getFolderMediaList(data, currentFolder);
+        let list: FileDetails[] = getFolderMediaList(data, currentFolder, includeSubfolders);
         if (mediaFilter === 'images') {
             list = list.filter(imageInfo => imageInfo.type === 'image');
         } else if (mediaFilter === 'videos') {
@@ -776,7 +777,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, compactOutputs, previewLayout.columnCount, showDateSections]);
+    }, [currentFolder, data, includeSubfolders, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, compactOutputs, previewLayout.columnCount, showDateSections]);
     const visibleImagesDetailsList = useMemo(
         () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
         [imagesDetailsList, visibleMediaLimit]
@@ -835,7 +836,7 @@ const GalleryImageGrid = () => {
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
         setPendingScrollTarget(null);
-    }, [currentFolder, searchFileName, searchScope, sortMethod, mediaFilter, dateRange, compactOutputs, mediaBatchSize]);
+    }, [currentFolder, includeSubfolders, searchFileName, searchScope, sortMethod, mediaFilter, dateRange, compactOutputs, mediaBatchSize]);
 
     useEffect(() => {
         gridRef.current?.resetAfterIndices?.({

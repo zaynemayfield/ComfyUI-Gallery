@@ -49,6 +49,7 @@ Restart ComfyUI after installation or updates.
 - Use search scopes to search by filename, metadata, positive prompt, negative prompt, model, or seed.
 - Use media filters for All, Images, or Videos.
 - Use preview size and batch size controls to tune how many cards appear while scrolling.
+- Turn Subfolders off when you only want media directly inside the selected folder.
 - Turn Compact on to group related files with the same base name, including `-audio` variants.
 - Turn Autoplay on only when you want visible video cards to play in the grid.
 - Click a card to open the preview overlay with media actions and metadata.

@@ -45,6 +45,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added file size metadata for non-image media and compacted header controls for autoplay, date range, preview size, and batch size.
 - Added scoped search across filename, metadata, positive prompt, negative prompt, model, and seed, and reorganized header sort/media/autoplay controls.
 - Added compact Off/On toggles for Compact and date dividers, matching the Autoplay control layout.
+- Added a Subfolders Off/On header toggle so selected folders can show only direct media or include descendant folder media.
 - Suppressed date section rows during active search and reset the virtual grid when date section layout changes.
 - Moved preview position count to the upper right, separated Date Sections into its own control group, and changed image cards to contain full thumbnails.
 - Restyled sort controls to match the neutral header controls instead of using the primary blue button state.

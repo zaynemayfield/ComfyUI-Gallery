@@ -51,6 +51,7 @@ const GalleryHeader = () => {
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
         compactOutputs, setCompactOutputs,
+        includeSubfolders, setIncludeSubfolders,
         imagesAutoCompleteNames,
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
@@ -349,6 +350,22 @@ const GalleryHeader = () => {
                                 ]}
                                 value={settings.showDateDivider}
                                 onChange={value => setSettings({ ...settings, showDateDivider: Boolean(value) })}
+                            />
+                        </Flex>
+                    </Flex>
+                    <Flex vertical gap={2}>
+                        <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
+                            <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
+                                Subfolders
+                            </Typography>
+                            <Segmented
+                                size="small"
+                                options={[
+                                    { label: 'Off', value: false },
+                                    { label: 'On', value: true },
+                                ]}
+                                value={includeSubfolders}
+                                onChange={value => setIncludeSubfolders(Boolean(value))}
                             />
                         </Flex>
                     </Flex>
