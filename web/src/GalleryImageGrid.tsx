@@ -79,7 +79,7 @@ const GalleryImageGrid = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<any>(null);
     const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
-    const [pendingScrollRow, setPendingScrollRow] = useState<number | null>(null);
+    const [pendingScrollDate, setPendingScrollDate] = useState<string | null>(null);
     const previewLayout = useMemo(
         () => getPreviewLayout(gridSize.width, previewSize),
         [gridSize.width, previewSize]
@@ -151,6 +151,11 @@ const GalleryImageGrid = () => {
             return rows;
         }, []);
     }, [imagesDetailsList, previewLayout.columnCount]);
+    const visibleDateDividerRows = useMemo(() => {
+        return dateDividerRows.filter(row =>
+            visibleImagesDetailsList[row.rowIndex * previewLayout.columnCount]?.type === 'divider'
+        );
+    }, [dateDividerRows, visibleImagesDetailsList, previewLayout.columnCount]);
     const getRowHeight = useCallback((rowIndex: number) => {
         const firstItemInRow = visibleImagesDetailsList[rowIndex * previewLayout.columnCount];
         return firstItemInRow?.type === 'divider' ? DATE_DIVIDER_ROW_HEIGHT : previewLayout.rowHeight;
@@ -170,25 +175,25 @@ const GalleryImageGrid = () => {
 
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
-        setPendingScrollRow(null);
+        setPendingScrollDate(null);
     }, [currentFolder, searchFileName, sortMethod, mediaFilter, mediaBatchSize]);
 
     useEffect(() => {
-        if (pendingScrollRow === null) return;
-        const targetIndex = pendingScrollRow * previewLayout.columnCount;
-        if (!visibleImagesDetailsList[targetIndex]) return;
+        if (pendingScrollDate === null) return;
+        const targetRow = visibleDateDividerRows.find(row => row.date === pendingScrollDate);
+        if (!targetRow) return;
         gridRef.current?.scrollToItem?.({
-            rowIndex: pendingScrollRow,
+            rowIndex: targetRow.rowIndex,
             columnIndex: 0,
             align: 'start',
         });
-        setPendingScrollRow(null);
-    }, [pendingScrollRow, previewLayout.columnCount, visibleImagesDetailsList]);
+        setPendingScrollDate(null);
+    }, [pendingScrollDate, visibleDateDividerRows]);
 
-    const scrollToDateRow = useCallback((target: { rowIndex: number; mediaBefore: number }) => {
+    const scrollToDateRow = useCallback((target: { date: string; mediaBefore: number }) => {
         const requiredVisibleLimit = Math.max(mediaBatchSize, target.mediaBefore + 1);
         setVisibleMediaLimit(currentLimit => Math.max(currentLimit, requiredVisibleLimit));
-        setPendingScrollRow(target.rowIndex);
+        setPendingScrollDate(target.date);
     }, [mediaBatchSize]);
 
     const handleInfoClick = useCallback((imageName: string) => {
@@ -211,14 +216,17 @@ const GalleryImageGrid = () => {
         if (!image) return null;
         if (image.type === 'divider') {
             if (columnIndex !== 0) return null;
-            const currentDateIndex = dateDividerRows.findIndex(row => row.rowIndex === rowIndex);
+            const currentDateIndex = dateDividerRows.findIndex(row => row.date === image.name);
             const previousDate = currentDateIndex > 0 ? dateDividerRows[currentDateIndex - 1] : undefined;
             const nextDate = currentDateIndex >= 0 && currentDateIndex < dateDividerRows.length - 1 ? dateDividerRows[currentDateIndex + 1] : undefined;
             const jumpButtonStyle: React.CSSProperties = {
-                height: 20,
-                padding: '0 6px',
+                height: 22,
+                padding: '0 8px',
                 fontSize: 11,
-                lineHeight: '18px',
+                lineHeight: '20px',
+                fontWeight: 600,
+                borderRadius: 4,
+                border: '1px solid rgba(22, 119, 255, 0.42)',
             };
             return (
                 <div
@@ -261,27 +269,27 @@ const GalleryImageGrid = () => {
                         {previousDate && (
                             <Button
                                 size="small"
-                                type="text"
+                                type="default"
                                 style={jumpButtonStyle}
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     scrollToDateRow(previousDate);
                                 }}
                             >
-                                Previous Day
+                                ↑ Previous Day
                             </Button>
                         )}
                         {nextDate && (
                             <Button
                                 size="small"
-                                type="text"
+                                type="primary"
                                 style={jumpButtonStyle}
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     scrollToDateRow(nextDate);
                                 }}
                             >
-                                Next Day
+                                ↓ Next Day
                             </Button>
                         )}
                         <div

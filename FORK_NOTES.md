@@ -27,6 +27,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.
+- Fixed day navigation so it expands the visible media batch before jumping to unloaded date sections.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point
