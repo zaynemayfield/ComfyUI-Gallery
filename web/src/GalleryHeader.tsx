@@ -23,6 +23,8 @@ const GalleryHeader = () => {
     } = useGalleryContext();
 
     const [search, setSearch] = useState("");
+    const [dateSort, setDateSort] = useState<'Newest' | 'Oldest'>('Newest');
+    const [nameSort, setNameSort] = useState<'Name ↑' | 'Name ↓'>('Name ↑');
     const [showClose, setShowClose] = useState(false);
     const [targetDate, setTargetDate] = useState<number>();
     const [countdown] = useCountDown({
@@ -72,11 +74,15 @@ const GalleryHeader = () => {
     }, [debouncedSearch, imagesAutoCompleteNames, setAutoCompleteOptions]);
 
     const toggleDateSort = () => {
-        setSortMethod(sortMethod === 'Newest' ? 'Oldest' : 'Newest');
+        const nextSort = dateSort === 'Newest' ? 'Oldest' : 'Newest';
+        setDateSort(nextSort);
+        setSortMethod(nextSort);
     };
 
     const toggleNameSort = () => {
-        setSortMethod(sortMethod === 'Name ↑' ? 'Name ↓' : 'Name ↑');
+        const nextSort = nameSort === 'Name ↑' ? 'Name ↓' : 'Name ↑';
+        setNameSort(nextSort);
+        setSortMethod(nextSort);
     };
 
     return (
@@ -126,7 +132,7 @@ const GalleryHeader = () => {
                         onClick={toggleDateSort}
                         style={{ minWidth: 78 }}
                     >
-                        {sortMethod === 'Oldest' ? 'Oldest' : 'Newest'}
+                        {dateSort}
                     </Button>
                     <Button
                         size="middle"
@@ -134,7 +140,7 @@ const GalleryHeader = () => {
                         onClick={toggleNameSort}
                         style={{ minWidth: 82 }}
                     >
-                        {sortMethod === 'Name ↓' ? 'Name ↓' : 'Name ↑'}
+                        {nameSort}
                     </Button>
                     <Segmented
                         options={[
