@@ -207,6 +207,13 @@ def detect_folder_changes(old_folders, new_folders):
         new_folder = new_folders.get(folder_name, {})
         folder_changes = {}
 
+        if folder_name not in old_folders:
+            changes["folders"][folder_name] = {}
+            continue
+        if folder_name not in new_folders:
+            changes["folders"][folder_name] = {"__folder__": {"action": "remove"}}
+            continue
+
         old_files = set(old_folder.keys())
         new_files = set(new_folder.keys())
         all_files = old_files | new_files

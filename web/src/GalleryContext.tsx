@@ -282,10 +282,16 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
                 const folderChanges = changes.folders[folderName];
                 if (!folders[folderName] && folderChanges) {
                     folders[folderName] = {};
+                    changed = true;
                 }
                 if (folders[folderName]) {
                     for (const filename in folderChanges) {
                         const fileChange = folderChanges[filename];
+                        if (filename === "__folder__" && fileChange.action === "remove") {
+                            delete folders[folderName];
+                            changed = true;
+                            continue;
+                        }
                         switch (fileChange.action) {
                             case 'create':
                                 folders[folderName][filename] = { ...fileChange };
