@@ -98,6 +98,7 @@ function ImageCard({
     const videoRef = useRef<HTMLVideoElement>(null);
     const [dragging, setDragging] = useState(false);
     const [videoInView, setVideoInView] = useState(false);
+    const [videoDuration, setVideoDuration] = useState<number | undefined>(undefined);
     const compactItems = image.compactItems?.length ? image.compactItems : [image];
     const [compactIndex, setCompactIndex] = useState(0);
     const currentImage = compactItems[Math.min(compactIndex, compactItems.length - 1)] ?? image;
@@ -106,10 +107,22 @@ function ImageCard({
         : currentImage.type === 'image'
             ? 'rgba(105, 177, 255, 0.55)'
             : 'rgba(127, 127, 127, 0.38)';
+    const formatDuration = (duration?: number) => {
+        if (!duration || Number.isNaN(duration)) return undefined;
+        const minutes = Math.floor(duration / 60);
+        const seconds = Math.floor(duration % 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+    const fileSizeText = currentImage.metadata?.fileinfo?.size;
+    const durationText = currentImage.type === 'media' ? formatDuration(videoDuration) : undefined;
 
     useEffect(() => {
         setCompactIndex(0);
     }, [image.url, image.compactCount]);
+
+    useEffect(() => {
+        setVideoDuration(undefined);
+    }, [currentImage.url]);
 
     useDrag(
         {
@@ -409,6 +422,7 @@ function ImageCard({
                     loop={settings.autoPlayVideos}
                     muted={true}
                     preload="metadata"
+                    onLoadedMetadata={(event) => setVideoDuration(event.currentTarget.duration)}
                     onClick={() => {
                         onVideoClick(currentImage);
                         document.getElementById(currentImage.url)?.click();
@@ -432,7 +446,9 @@ function ImageCard({
                     position: "absolute",
                     backgroundColor: "#00000042",
                     width: "-webkit-fill-available",
-                    padding: "10px",
+                    height: 54,
+                    padding: "7px 10px",
+                    boxSizing: 'border-box',
                     bottom: "0px",
                     display: "flex",
                     alignContent: "center",
@@ -440,18 +456,40 @@ function ImageCard({
                     alignItems: "center",
                 }}
             >
-                <Typography.Text
-                    strong
+                <div
                     style={{
-                        margin: 0,
-                        color: "white"
-                    }}
-                    ellipsis={{
-
+                        minWidth: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        gap: 2,
                     }}
                 >
-                    {currentImage.name}
-                </Typography.Text>
+                    <Typography.Text
+                        strong
+                        style={{
+                            margin: 0,
+                            color: "white",
+                            lineHeight: '18px',
+                            maxWidth: cardWidth - 58,
+                        }}
+                        ellipsis
+                    >
+                        {currentImage.name}
+                    </Typography.Text>
+                    <Typography.Text
+                        style={{
+                            margin: 0,
+                            color: 'rgba(255,255,255,0.82)',
+                            fontSize: 11,
+                            lineHeight: '14px',
+                            maxWidth: cardWidth - 58,
+                        }}
+                        ellipsis
+                    >
+                        {[fileSizeText, durationText].filter(Boolean).join('  |  ') || '\u00A0'}
+                    </Typography.Text>
+                </div>
                 <Button
                     color="cyan"
                     variant="filled"

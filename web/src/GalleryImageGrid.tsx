@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Empty, Image, Spin } from 'antd';
+import RetweetOutlined from '@ant-design/icons/lib/icons/RetweetOutlined';
 import { AutoSizer } from 'react-virtualized';
 import { VariableSizeGrid } from 'react-window';
 import ImageCard, { ImageCardHeight, ImageCardWidth } from './ImageCard';
@@ -115,6 +116,90 @@ const takeMediaBatch = (items: FileDetails[], limit: number) => {
 };
 
 const DATE_DIVIDER_ROW_HEIGHT = 26;
+const PREVIEW_VOLUME_KEY = 'comfy-ui-gallery-preview-volume';
+const PREVIEW_LOOP_KEY = 'comfy-ui-gallery-preview-loop';
+
+const getStoredPreviewVolume = () => {
+    const raw = localStorage.getItem(PREVIEW_VOLUME_KEY);
+    const parsed = raw === null ? NaN : Number(raw);
+    return Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : 0.5;
+};
+
+const getStoredPreviewLoop = () => localStorage.getItem(PREVIEW_LOOP_KEY) === 'true';
+
+const PreviewVideo = ({ image }: { image: FileDetails }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [volume, setVolume] = useState(getStoredPreviewVolume);
+    const [loop, setLoop] = useState(getStoredPreviewLoop);
+
+    useEffect(() => {
+        if (!videoRef.current) return;
+        videoRef.current.volume = volume;
+    }, [volume, image.url]);
+
+    useEffect(() => {
+        localStorage.setItem(PREVIEW_LOOP_KEY, String(loop));
+    }, [loop]);
+
+    return (
+        <div
+            style={{
+                position: 'relative',
+                maxWidth: '92vw',
+                maxHeight: '86vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
+            <video
+                ref={videoRef}
+                key={image.name}
+                style={{ maxWidth: '92vw', maxHeight: '86vh', width: 'auto', height: 'auto' }}
+                src={`${BASE_PATH}${image.url}`}
+                autoPlay
+                controls
+                loop={loop}
+                preload="metadata"
+                onLoadedMetadata={(event) => {
+                    event.currentTarget.volume = volume;
+                }}
+                onVolumeChange={(event) => {
+                    const nextVolume = event.currentTarget.volume;
+                    setVolume(nextVolume);
+                    localStorage.setItem(PREVIEW_VOLUME_KEY, String(nextVolume));
+                }}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    const video = event.currentTarget;
+                    if (video.paused) {
+                        video.play().catch(() => undefined);
+                    } else {
+                        video.pause();
+                    }
+                }}
+            />
+            <Button
+                size="small"
+                type={loop ? 'primary' : 'default'}
+                icon={<RetweetOutlined />}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    setLoop(value => !value);
+                }}
+                style={{
+                    position: 'absolute',
+                    right: 10,
+                    bottom: 44,
+                    zIndex: 2,
+                    opacity: 0.9,
+                }}
+            >
+                Loop
+            </Button>
+        </div>
+    );
+};
 
 const GalleryImageGrid = () => {
     const {
@@ -563,21 +648,7 @@ const GalleryImageGrid = () => {
                 );
             }
             if (image.type === 'media') {
-                return (
-                    <video
-                        key={image.name}
-                        style={{ maxWidth: '92vw', maxHeight: '86vh', width: 'auto', height: 'auto' }}
-                        src={`${BASE_PATH}${image.url}`}
-                        autoPlay={true}
-                        controls={true}
-                        preload="none"
-                        ref={el => {
-                            if (el && !settings.autoPlayVideos) {
-                                el.pause(); el.currentTime = 0;
-                            }
-                        }}
-                    />
-                );
+                return <PreviewVideo image={image} />;
             }
             return originalNode;
         }
