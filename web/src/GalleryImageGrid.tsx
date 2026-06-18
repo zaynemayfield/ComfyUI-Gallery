@@ -450,15 +450,6 @@ const GalleryImageGrid = () => {
         setGridSize({ width, height, columnCount, rowCount });
     }, [autoSizer.width, autoSizer.height, visibleImagesDetailsList.length, previewSize]);
 
-    useEffect(() => {
-        const grid = document.querySelector(".grid-element");
-        if (grid) {
-            Array.from(grid.children).forEach(child => {
-                (child as HTMLElement).style.position = 'relative';
-            });
-        }
-    }, [gridSize, imageInfoName, currentFolder, data]);
-
     // Memoized previewable images for InfoView navigation and rendering
     const previewableImages = useMemo(() =>
         visibleImagesDetailsList.filter(isMediaItem),
