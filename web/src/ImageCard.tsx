@@ -82,7 +82,7 @@ function ImageCard({
     cardWidth = ImageCardWidth,
     cardHeight = ImageCardHeight,
 }: {
-    image: FileDetails & { dragFolder?: string };
+    image: FileDetails & { dragFolder?: string; compactCount?: number };
     index: number;
     onInfoClick: (imageName: string | undefined) => void;
     onVideoClick: (imageName: string | undefined) => void;
@@ -205,6 +205,65 @@ function ImageCard({
             }}
             onClick={handleCardClick}
         >
+            {image.compactCount && image.compactCount > 1 && (
+                <div
+                    title={`${image.compactCount} related outputs compacted`}
+                    style={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        zIndex: 3,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        height: 22,
+                        padding: '0 7px',
+                        borderRadius: 4,
+                        background: 'rgba(0, 0, 0, 0.58)',
+                        border: '1px solid rgba(255, 255, 255, 0.34)',
+                        color: '#fff',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        lineHeight: '20px',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <span
+                        aria-hidden="true"
+                        style={{
+                            position: 'relative',
+                            width: 10,
+                            height: 10,
+                            display: 'inline-block',
+                        }}
+                    >
+                        <span
+                            style={{
+                                position: 'absolute',
+                                left: 0,
+                                top: 2,
+                                width: 7,
+                                height: 7,
+                                border: '1px solid currentColor',
+                                borderRadius: 1,
+                            }}
+                        />
+                        <span
+                            style={{
+                                position: 'absolute',
+                                left: 3,
+                                top: 0,
+                                width: 7,
+                                height: 7,
+                                border: '1px solid currentColor',
+                                borderRadius: 1,
+                                background: 'rgba(0, 0, 0, 0.32)',
+                            }}
+                        />
+                    </span>
+                    {image.compactCount}
+                </div>
+            )}
             {image.type == "image" ? (<>
                 <Image
                     id={image.url}

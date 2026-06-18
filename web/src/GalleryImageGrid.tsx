@@ -39,6 +39,51 @@ const isMediaItem = (item: FileDetails) => (
     item.type === "image" || item.type === "media" || item.type === "audio" || item.type === "3d"
 );
 
+type CompactFileDetails = FileDetails & {
+    compactCount?: number;
+};
+
+const getCompactGroupKey = (item: FileDetails) => {
+    if (!isMediaItem(item)) return item.name;
+    const stem = item.name.replace(/\.[^/.]+$/, "");
+    return stem.replace(/-audio$/i, "").toLowerCase();
+};
+
+const isAudioVariant = (item: FileDetails) => {
+    const stem = item.name.replace(/\.[^/.]+$/, "");
+    return /-audio$/i.test(stem);
+};
+
+const compactRelatedOutputs = (items: FileDetails[]): CompactFileDetails[] => {
+    const groups = new Map<string, FileDetails[]>();
+    const orderedKeys: string[] = [];
+
+    items.forEach(item => {
+        const key = getCompactGroupKey(item);
+        if (!groups.has(key)) {
+            groups.set(key, []);
+            orderedKeys.push(key);
+        }
+        groups.get(key)!.push(item);
+    });
+
+    return orderedKeys.map(key => {
+        const group = groups.get(key)!;
+        if (group.length === 1) return group[0];
+
+        const representative =
+            group.find(isAudioVariant)
+            ?? group.find(item => item.type === 'media')
+            ?? group.find(item => item.type === 'image')
+            ?? group[0];
+
+        return {
+            ...representative,
+            compactCount: group.length,
+        };
+    });
+};
+
 const takeMediaBatch = (items: FileDetails[], limit: number) => {
     const result: FileDetails[] = [];
     let mediaCount = 0;
@@ -74,7 +119,8 @@ const GalleryImageGrid = () => {
         settings,
         loading,
         previewSize,
-        mediaBatchSize
+        mediaBatchSize,
+        compactOutputs
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<any>(null);
@@ -94,6 +140,9 @@ const GalleryImageGrid = () => {
         if (searchFileName && searchFileName.trim() !== "") {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
+        }
+        if (compactOutputs) {
+            list = compactRelatedOutputs(list);
         }
         if (sortMethod !== 'Name ↑' && sortMethod !== 'Name ↓') {
             list = list.sort((a, b) => (sortMethod === 'Newest' ? (b.timestamp || 0) - (a.timestamp || 0) : (a.timestamp || 0) - (b.timestamp || 0)));
@@ -128,7 +177,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, gridSize.columnCount, settings.showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, compactOutputs, gridSize.columnCount, settings.showDateDivider]);
     const visibleImagesDetailsList = useMemo(
         () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
         [imagesDetailsList, visibleMediaLimit]
@@ -176,7 +225,7 @@ const GalleryImageGrid = () => {
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
         setPendingScrollDate(null);
-    }, [currentFolder, searchFileName, sortMethod, mediaFilter, mediaBatchSize]);
+    }, [currentFolder, searchFileName, sortMethod, mediaFilter, compactOutputs, mediaBatchSize]);
 
     useEffect(() => {
         if (pendingScrollDate === null) return;

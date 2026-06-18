@@ -17,6 +17,7 @@ const GalleryHeader = () => {
         mediaFilter, setMediaFilter,
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
+        compactOutputs, setCompactOutputs,
         imagesAutoCompleteNames,
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
@@ -173,6 +174,13 @@ const GalleryHeader = () => {
                         value={mediaBatchSize}
                         onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
                     />
+                    <Button
+                        size="middle"
+                        type={compactOutputs ? 'primary' : 'default'}
+                        onClick={() => setCompactOutputs(prev => !prev)}
+                    >
+                        Compact
+                    </Button>
                     <Segmented
                         options={[
                             { label: 'Autoplay Off', value: false },

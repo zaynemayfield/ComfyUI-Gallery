@@ -87,6 +87,8 @@ export interface GalleryContextType {
     setPreviewSize: Dispatch<SetStateAction<GalleryPreviewSize>>;
     mediaBatchSize: 20 | 40 | 60;
     setMediaBatchSize: Dispatch<SetStateAction<20 | 40 | 60>>;
+    compactOutputs: boolean;
+    setCompactOutputs: Dispatch<SetStateAction<boolean>>;
     imageInfoName: string | undefined;
     setImageInfoName: Dispatch<SetStateAction<string | undefined>>;
     open: boolean;
@@ -129,6 +131,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [mediaFilter, setMediaFilter] = useState<GalleryMediaFilter>('all');
     const [previewSize, setPreviewSize] = useState<GalleryPreviewSize>('medium');
     const [mediaBatchSize, setMediaBatchSize] = useState<20 | 40 | 60>(20);
+    const [compactOutputs, setCompactOutputs] = useState(false);
     const [imageInfoName, setImageInfoName] = useState<string | undefined>(undefined);
     const [open, setOpen] = useState(false);
     const [previewingVideo, setPreviewingVideo] = useState<string | undefined>(undefined);
@@ -374,6 +377,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         mediaFilter, setMediaFilter,
         previewSize, setPreviewSize,
         mediaBatchSize, setMediaBatchSize,
+        compactOutputs, setCompactOutputs,
         imageInfoName, setImageInfoName,
         open, setOpen,
         previewingVideo, setPreviewingVideo,
@@ -402,6 +406,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         mediaFilter,
         previewSize,
         mediaBatchSize,
+        compactOutputs,
         imageInfoName,
         open,
         previewingVideo,

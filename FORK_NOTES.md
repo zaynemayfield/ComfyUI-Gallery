@@ -14,6 +14,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added a Small/Medium/Large preview size control for responsive media thumbnails.
 - Added a 20/40/60 media batch control that reveals more thumbnails as the user scrolls.
 - Added a top-row video autoplay toggle and changed the default autoplay setting to off.
+- Added a Compact display mode that groups related outputs with matching stems, preferring `-audio` variants as the visible card.
 - Replaced the default modal close icon with a red Close button in the header row.
 - Replaced the left header toggle with a compact icon that shows or hides the horizontal folder navigation.
 - Restyled horizontal folder navigation into one icon-led row using separators instead of section labels.
@@ -24,6 +25,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Updated the move picker so selecting a destination automatically expands the tree branch that shows the preview placement.
 - Updated the media grid sizing so cards fit the available width without needing a bottom horizontal scrollbar.
 - Added subtle media-type borders to preview cards so image and video thumbnails are easier to distinguish.
+- Added a non-blocking compact-count badge to grouped preview cards.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.
