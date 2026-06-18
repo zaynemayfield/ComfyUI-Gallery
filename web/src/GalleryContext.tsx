@@ -9,6 +9,7 @@ import type { AutoCompleteProps } from 'antd/es/auto-complete';
 import { ComfyAppApi, BASE_PATH, OPEN_BUTTON_ID } from './ComfyAppApi';
 import { useClickAway } from 'ahooks';
 import { getDescendantFolderKeys, getFolderMediaList, getRootFolders } from './galleryFolderUtils';
+import { matchesGallerySearch, type GallerySearchScope } from './gallerySearch';
 
 function getImages(): Promise<FilesTree> {
     return new Promise(async (resolve, reject) => {
@@ -74,6 +75,8 @@ export interface GalleryContextType {
     setCurrentFolder: Dispatch<SetStateAction<string>>;
     searchFileName: string;
     setSearchFileName: Dispatch<SetStateAction<string>>;
+    searchScope: GallerySearchScope;
+    setSearchScope: Dispatch<SetStateAction<GallerySearchScope>>;
     showDateDivider: boolean;
     setShowDateDivider: Dispatch<SetStateAction<boolean>>;
     showSettings: boolean;
@@ -129,6 +132,7 @@ const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [currentFolder, setCurrentFolder] = useState("output");
     const [searchFileName, setSearchFileName] = useState("");
+    const [searchScope, setSearchScope] = useState<GallerySearchScope>('all');
     const [showDateDivider, setShowDateDivider] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
     const [showRawMetadata, setShowRawMetadata] = useState(false);
@@ -225,8 +229,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             list = list.filter(imageInfo => imageInfo.type === 'media');
         }
         if (searchFileName && searchFileName.trim() !== "") {
-            const searchTerm = searchFileName.toLowerCase();
-            list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
+            list = list.filter(imageInfo => matchesGallerySearch(imageInfo, searchFileName, searchScope));
         }
         const [dateStart, dateEnd] = dateRange;
         if (dateStart || dateEnd) {
@@ -272,7 +275,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, dateRange, gridSize.columnCount, showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, gridSize.columnCount, showDateDivider]);
 
     // Memoized list of image URLs for preview
     const imagesUrlsLists = useMemo(() =>
@@ -390,6 +393,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const value = useMemo(() => ({
         currentFolder, setCurrentFolder,
         searchFileName, setSearchFileName,
+        searchScope, setSearchScope,
         showDateDivider, setShowDateDivider,
         showSettings, setShowSettings,
         showRawMetadata, setShowRawMetadata,
@@ -422,6 +426,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     }), [
         currentFolder,
         searchFileName,
+        searchScope,
         showDateDivider,
         showSettings,
         showRawMetadata,

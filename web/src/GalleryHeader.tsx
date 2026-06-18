@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Flex, AutoComplete, Button, DatePicker, Modal, Segmented, message, Popconfirm, Tooltip, Tree } from 'antd';
+import { Flex, AutoComplete, Button, DatePicker, Modal, Segmented, Select, message, Popconfirm, Tooltip, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { CloseOutlined, CloseSquareFilled, DeleteOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
@@ -44,6 +44,7 @@ const GalleryHeader = () => {
     const {
         setShowSettings,
         setSearchFileName,
+        searchScope, setSearchScope,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
         dateRange, setDateRange,
@@ -213,49 +214,71 @@ const GalleryHeader = () => {
                     </Tooltip>
                 </Flex>
                 <Flex align="center" gap={8} wrap="wrap" style={{ flex: 1, minWidth: 320 }}>
-                    <AutoComplete
-                        options={
-                            autoCompleteOptions && autoCompleteOptions.length > 0
-                                ? autoCompleteOptions
-                                : imagesAutoCompleteNames
-                        }
-                        style={{
-                            width: 280,
-                            maxWidth: '100%'
-                        }}
-                        onSearch={text => setSearch(text)}
-                        value={search}
-                        onChange={val => setSearch(val)}
-                        placeholder="Search files"
-                        allowClear={{
-                            clearIcon: <CloseSquareFilled />
-                        }}
-                    />
-                    <Button
-                        size="middle"
-                        type={sortMethod === 'Newest' || sortMethod === 'Oldest' ? 'primary' : 'default'}
-                        onClick={toggleDateSort}
-                        style={{ minWidth: 78 }}
-                    >
-                        {dateSort}
-                    </Button>
-                    <Button
-                        size="middle"
-                        type={sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? 'primary' : 'default'}
-                        onClick={toggleNameSort}
-                        style={{ minWidth: 82 }}
-                    >
-                        {nameSort}
-                    </Button>
-                    <Segmented
-                        options={[
-                            { label: 'All', value: 'all' },
-                            { label: 'Images', value: 'images' },
-                            { label: 'Videos', value: 'videos' },
-                        ]}
-                        value={mediaFilter}
-                        onChange={value => setMediaFilter(value as any)}
-                    />
+                    <Flex align="center" gap={4}>
+                        <Select
+                            size="middle"
+                            value={searchScope}
+                            onChange={setSearchScope}
+                            style={{ width: 136 }}
+                            options={[
+                                { label: 'All', value: 'all' },
+                                { label: 'Filename', value: 'filename' },
+                                { label: 'Metadata', value: 'metadata' },
+                                { label: 'Positive Prompt', value: 'positive' },
+                                { label: 'Negative Prompt', value: 'negative' },
+                                { label: 'Model', value: 'model' },
+                                { label: 'Seed', value: 'seed' },
+                            ]}
+                        />
+                        <AutoComplete
+                            options={
+                                autoCompleteOptions && autoCompleteOptions.length > 0
+                                    ? autoCompleteOptions
+                                    : imagesAutoCompleteNames
+                            }
+                            style={{
+                                width: 240,
+                                maxWidth: '100%'
+                            }}
+                            onSearch={text => setSearch(text)}
+                            value={search}
+                            onChange={val => setSearch(val)}
+                            placeholder="Search"
+                            allowClear={{
+                                clearIcon: <CloseSquareFilled />
+                            }}
+                        />
+                    </Flex>
+                    <Flex vertical gap={2}>
+                        <Flex gap={4}>
+                            <Button
+                                size="small"
+                                type={sortMethod === 'Newest' || sortMethod === 'Oldest' ? 'primary' : 'default'}
+                                onClick={toggleDateSort}
+                                style={{ minWidth: 82 }}
+                            >
+                                {dateSort} {dateSort === 'Newest' ? '↓' : '↑'}
+                            </Button>
+                            <Button
+                                size="small"
+                                type={sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? 'primary' : 'default'}
+                                onClick={toggleNameSort}
+                                style={{ minWidth: 82 }}
+                            >
+                                {nameSort}
+                            </Button>
+                        </Flex>
+                        <Segmented
+                            size="small"
+                            options={[
+                                { label: 'All', value: 'all' },
+                                { label: 'Images', value: 'images' },
+                                { label: 'Videos', value: 'videos' },
+                            ]}
+                            value={mediaFilter}
+                            onChange={value => setMediaFilter(value as any)}
+                        />
+                    </Flex>
                     <Flex vertical gap={2}>
                         <DatePicker
                             size="small"
@@ -303,14 +326,20 @@ const GalleryHeader = () => {
                             Compact
                         </Button>
                     </Tooltip>
-                    <Segmented
-                        options={[
-                            { label: 'Off', value: false },
-                            { label: 'On', value: true },
-                        ]}
-                        value={settings.autoPlayVideos}
-                        onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
-                    />
+                    <Flex align="center" gap={6} style={{ padding: '3px 6px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
+                        <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
+                            Autoplay
+                        </Typography>
+                        <Segmented
+                            size="small"
+                            options={[
+                                { label: 'Off', value: false },
+                                { label: 'On', value: true },
+                            ]}
+                            value={settings.autoPlayVideos}
+                            onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
+                        />
+                    </Flex>
             {showClose && (
                 <div
                     style={{ 

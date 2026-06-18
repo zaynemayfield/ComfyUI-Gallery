@@ -22,6 +22,7 @@ import { getFolderMediaList } from './galleryFolderUtils';
 import type { GalleryPreviewSize } from './GalleryContext';
 import { parseComfyMetadata } from './metadata-parser/metadataParser';
 import ReactJsonView from '@microlink/react-json-view';
+import { matchesGallerySearch } from './gallerySearch';
 
 const GRID_GAP = 16;
 const PREVIEW_SIZE_DIMENSIONS: Record<GalleryPreviewSize, { width: number; height: number }> = {
@@ -660,6 +661,7 @@ const GalleryImageGrid = () => {
         data,
         currentFolder,
         searchFileName,
+        searchScope,
         sortMethod,
         mediaFilter,
         dateRange,
@@ -697,8 +699,7 @@ const GalleryImageGrid = () => {
             list = list.filter(imageInfo => imageInfo.type === 'media');
         }
         if (searchFileName && searchFileName.trim() !== "") {
-            const searchTerm = searchFileName.toLowerCase();
-            list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
+            list = list.filter(imageInfo => matchesGallerySearch(imageInfo, searchFileName, searchScope));
         }
         const [dateStart, dateEnd] = dateRange;
         if (dateStart || dateEnd) {
@@ -747,7 +748,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, dateRange, compactOutputs, previewLayout.columnCount, settings.showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, compactOutputs, previewLayout.columnCount, settings.showDateDivider]);
     const visibleImagesDetailsList = useMemo(
         () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
         [imagesDetailsList, visibleMediaLimit]
@@ -806,7 +807,7 @@ const GalleryImageGrid = () => {
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
         setPendingScrollTarget(null);
-    }, [currentFolder, searchFileName, sortMethod, mediaFilter, dateRange, compactOutputs, mediaBatchSize]);
+    }, [currentFolder, searchFileName, searchScope, sortMethod, mediaFilter, dateRange, compactOutputs, mediaBatchSize]);
 
     useEffect(() => {
         if (pendingScrollTarget === null) return;
