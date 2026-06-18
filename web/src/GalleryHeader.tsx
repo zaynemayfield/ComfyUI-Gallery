@@ -56,6 +56,7 @@ const GalleryHeader = () => {
         settings, setSettings,
         data,
         currentFolder,
+        imagesDetailsList,
         runAsync,
     } = useGalleryContext();
 
@@ -124,10 +125,18 @@ const GalleryHeader = () => {
     };
 
     const folderTreeData = buildFolderTreeData(Object.keys(data?.folders ?? {}));
+    const selectableImages = imagesDetailsList.filter(image =>
+        image.type === 'image' || image.type === 'media' || image.type === 'audio' || image.type === '3d'
+    );
 
     const clearMultiSelect = () => {
         setSelectedImages([]);
         setMultiSelectMode(false);
+    };
+
+    const selectAllVisible = () => {
+        setSelectedImages(Array.from(new Set(selectableImages.map(image => image.url))));
+        setMultiSelectMode(selectableImages.length > 0);
     };
 
     const bulkDeleteSelected = async () => {
@@ -402,6 +411,9 @@ const GalleryHeader = () => {
                         }}
                     >
                         Move
+                    </Button>
+                    <Button onClick={selectAllVisible} disabled={selectableImages.length === 0}>
+                        Select All
                     </Button>
                     <Button onClick={clearMultiSelect}>
                         Clear

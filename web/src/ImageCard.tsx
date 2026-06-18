@@ -170,7 +170,9 @@ function ImageCard({
     const toggleSelected = () => {
         setSelectedImages((oldSelectedImages) => {
             if (oldSelectedImages.includes(currentImage.url)) {
-                return oldSelectedImages.filter((selectedImage) => selectedImage != currentImage.url);
+                const nextSelectedImages = oldSelectedImages.filter((selectedImage) => selectedImage != currentImage.url);
+                if (nextSelectedImages.length === 0) setMultiSelectMode(false);
+                return nextSelectedImages;
             }
             return [...oldSelectedImages, currentImage.url];
         });
@@ -405,7 +407,7 @@ function ImageCard({
                     }}
                     src={`${BASE_PATH}${currentImage.url}`}
                     loading="lazy"
-                    // preview={false}
+                    preview={multiSelectMode ? false : undefined}
                     onClick={(event) => {
                         if (multiSelectMode) {
                             event.stopPropagation();
