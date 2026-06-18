@@ -16,22 +16,44 @@ const GalleryModal = () => {
         <Modal
             zIndex={BASE_Z_INDEX}
             title={<GalleryHeader />}
-            centered
+            centered={false}
             open={open}
             closable={false}
             afterOpenChange={setOpen}
             onOk={() => setOpen(false)}
             onCancel={() => setOpen(false)}
             width={size?.width}
+            style={{
+                top: 12,
+                maxWidth: 'calc(100vw - 24px)',
+            }}
+            styles={{
+                content: {
+                    maxHeight: 'calc(100vh - 24px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                },
+                header: {
+                    flex: '0 0 auto',
+                },
+                body: {
+                    flex: '1 1 auto',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    padding: 0,
+                },
+            }}
             footer={null}
         >
-            <Layout 
-                style={{ 
-                    borderRadius: 8, 
-                    overflowX: "hidden", 
-                    overflowY: "auto", 
-                    width: '100%', 
-                    height: "85vh" 
+            <Layout
+                style={{
+                    borderRadius: 8,
+                    overflowX: "hidden",
+                    overflowY: "hidden",
+                    width: '100%',
+                    height: "100%",
+                    minHeight: 0,
                 }}
             >
                 <Sider 

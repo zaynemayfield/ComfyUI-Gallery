@@ -5,10 +5,11 @@ version = "2.7.0"
 license = {file = "LICENSE"} 
 
 [project.urls]
-Repository = "https://github.com/PanicTitan/ComfyUI-Gallery"
+Repository = "https://github.com/zaynemayfield/ComfyUI-Gallery"
+Upstream = "https://github.com/PanicTitan/ComfyUI-Gallery"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = "panic-titan"
+PublisherId = "zaynemayfield"
 DisplayName = "ComfyUI-Gallery"
-Icon = "https://raw.githubusercontent.com/PanicTitan/ComfyUI-Gallery/refs/heads/main/logo.png"
+Icon = "https://raw.githubusercontent.com/zaynemayfield/ComfyUI-Gallery/refs/heads/main/logo.png"

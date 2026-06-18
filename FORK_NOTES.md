@@ -49,6 +49,9 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Moved preview position count to the upper right, separated Date Sections into its own control group, and changed image cards to contain full thumbnails.
 - Restyled sort controls to match the neutral header controls instead of using the primary blue button state.
 - Removed duplicated/obsolete Settings controls and added lazy cached video thumbnail generation for faster default browsing.
+- Constrained the gallery modal to the viewport so the page does not show a second far-right vertical scrollbar.
+- Reworked the README for public fork distribution, including current usage, security notes, installation, development notes, and upstream credits.
+- Updated project metadata to point at this fork while preserving an upstream project link.
 - Limited thumbnail video autoplay to visible cards and pause videos without resetting playback position when autoplay is off or cards leave view.
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.
