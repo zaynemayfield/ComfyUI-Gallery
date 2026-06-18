@@ -31,6 +31,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.
 - Fixed day navigation so it expands the visible media batch before jumping to unloaded date sections.
 - Added a loading indicator and delayed scroll handoff for date jumps that need additional media rows to render first.
+- Changed date jumps to use explicit row offsets and avoid remounting the grid when additional batches load.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point

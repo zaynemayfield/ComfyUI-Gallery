@@ -226,6 +226,13 @@ const GalleryImageGrid = () => {
         }
         return total;
     }, [rowCount, getRowHeight]);
+    const getScrollOffsetForRow = useCallback((targetRowIndex: number) => {
+        let offset = 0;
+        for (let rowIndex = 0; rowIndex < targetRowIndex; rowIndex++) {
+            offset += getRowHeight(rowIndex);
+        }
+        return offset;
+    }, [getRowHeight]);
 
     const imagesUrlsLists = useMemo(() =>
         visibleImagesDetailsList.filter(isMediaItem).map(image => `${BASE_PATH}${image.url}`),
@@ -255,20 +262,19 @@ const GalleryImageGrid = () => {
             gridRef.current?.resetAfterIndices?.({
                 rowIndex: 0,
                 columnIndex: 0,
-                shouldForceUpdate: false,
+                shouldForceUpdate: true,
             });
             window.requestAnimationFrame(() => {
-                gridRef.current?.scrollToItem?.({
-                    rowIndex: targetRow.rowIndex,
-                    columnIndex: 0,
-                    align: 'start',
+                gridRef.current?.scrollTo?.({
+                    scrollLeft: 0,
+                    scrollTop: getScrollOffsetForRow(targetRow.rowIndex),
                 });
-                setPendingScrollTarget(null);
+                window.setTimeout(() => setPendingScrollTarget(null), 120);
             });
-        }, 80);
+        }, 140);
 
         return () => window.clearTimeout(timeoutId);
-    }, [pendingScrollTarget, visibleDateDividerRows, mediaBatchSize, totalMediaCount]);
+    }, [pendingScrollTarget, visibleDateDividerRows, mediaBatchSize, totalMediaCount, getScrollOffsetForRow]);
 
     const scrollToDateRow = useCallback((target: DateDividerRow) => {
         const requiredVisibleLimit = Math.max(mediaBatchSize, target.mediaBefore + 1);
@@ -668,7 +674,7 @@ const GalleryImageGrid = () => {
                             return (
                                 <VariableSizeGrid
                                     ref={gridRef}
-                                    key={`${previewSize}-${layout.columnCount}-${visibleImagesDetailsList.length}`}
+                                    key={`${previewSize}-${layout.columnCount}`}
                                     columnCount={layout.columnCount}
                                     rowCount={rowCount}
                                     columnWidth={() => layout.columnWidth}
