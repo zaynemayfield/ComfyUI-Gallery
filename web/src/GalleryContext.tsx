@@ -48,9 +48,9 @@ export interface SettingsState {
 export const DEFAULT_SETTINGS: SettingsState = {
     relativePath: './',
     buttonBoxQuery: 'div.flex.gap-2.mx-2',
-    buttonLabel: 'Open Gallery',
+    buttonLabel: 'Launch ComfyUI Gallery',
     showDateDivider: true,
-    floatingButton: true,
+    floatingButton: false,
     autoPlayVideos: true,
     hideOpenButton: false,
     darkMode: false,

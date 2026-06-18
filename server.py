@@ -28,13 +28,43 @@ if not os.path.exists(PLACEHOLDER_DIR):
     os.makedirs(PLACEHOLDER_DIR)
 
 # Add a *placeholder* static route.  This gets modified later.
-PromptServer.instance.routes.static('/static_gallery', PLACEHOLDER_DIR, follow_symlinks=True, name='static_gallery_placeholder') #give a name to the route
+PromptServer.instance.routes.static('/static_gallery', PLACEHOLDER_DIR, follow_symlinks=False, name='static_gallery_placeholder') #give a name to the route
 
 # Initialize scan_lock here
 PromptServer.instance.scan_lock = threading.Lock()
 
 # Settings file for persistent user settings
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_settings.json")
+
+
+def is_path_inside(path, root):
+    real_path = os.path.normcase(os.path.realpath(path))
+    real_root = os.path.normcase(os.path.realpath(root))
+    try:
+        return os.path.commonpath([real_path, real_root]) == real_root
+    except ValueError:
+        return False
+
+
+def resolve_gallery_path(relative_path="./"):
+    """Resolve a user-provided gallery path under ComfyUI's output directory."""
+    if relative_path is None or str(relative_path).lower() == 'null' or str(relative_path).strip() == "":
+        relative_path = "./"
+
+    relative_path = str(relative_path).replace("\\", os.sep)
+    if os.path.isabs(relative_path):
+        raise ValueError("Absolute gallery paths are not allowed")
+
+    base_output_dir = os.path.realpath(folder_paths.get_output_directory())
+    if relative_path in ("./", ".", ""):
+        full_path = base_output_dir
+    else:
+        full_path = os.path.realpath(os.path.join(base_output_dir, relative_path))
+
+    if not is_path_inside(full_path, base_output_dir):
+        raise ValueError("Gallery path must stay inside the ComfyUI output directory")
+
+    return full_path, relative_path
 
 
 def load_settings():
@@ -89,20 +119,10 @@ async def save_settings(request):
 async def get_gallery_images(request):
     """Endpoint to get gallery images, accepts relative_path."""
     raw_rel = request.rel_url.query.get("relative_path", "./")
-    # Normalize query value: treat null/None/empty as root
-    if raw_rel is None or str(raw_rel).lower() == 'null' or str(raw_rel).strip() == "":
-        relative_path = "./"
-    else:
-        relative_path = raw_rel
-
-    # Fix: Only join if relative_path is not absolute or '.'
-    base_output_dir = folder_paths.get_output_directory()
-    if os.path.isabs(relative_path):
-        full_monitor_path = os.path.normpath(relative_path)
-    elif relative_path in ("./", ".", ""):  # treat as root
-        full_monitor_path = base_output_dir
-    else:
-        full_monitor_path = os.path.normpath(os.path.join(base_output_dir, relative_path))
+    try:
+        full_monitor_path, relative_path = resolve_gallery_path(raw_rel)
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
 
     # Use a thread-safe queue to communicate between threads.
     result_queue = queue.Queue()
@@ -157,23 +177,16 @@ async def start_gallery_monitor(request):
     from . import gallery_config
     try:
         data = await request.json()
-        # Normalize relative_path: if missing, null, or literal 'null', treat as root
         relative_path = data.get("relative_path", "./")
-        if relative_path is None or str(relative_path).lower() == 'null' or str(relative_path).strip() == "":
-            relative_path = "./"
         gallery_config.disable_logs = data.get("disable_logs", False)
         gallery_config.use_polling_observer = data.get("use_polling_observer", False)
         scan_extensions = data.get("scan_extensions", DEFAULT_EXTENSIONS)
         disable_logs = gallery_config.disable_logs
         use_polling_observer = gallery_config.use_polling_observer
-        # Resolve path consistently with /Gallery/images endpoint
-        base_output_dir = folder_paths.get_output_directory()
-        if os.path.isabs(relative_path):
-            full_monitor_path = os.path.normpath(relative_path)
-        elif relative_path in ("./", ".", ""):
-            full_monitor_path = base_output_dir
-        else:
-            full_monitor_path = os.path.normpath(os.path.join(base_output_dir, relative_path))
+        try:
+            full_monitor_path, relative_path = resolve_gallery_path(relative_path)
+        except ValueError as e:
+            return web.Response(status=400, text=str(e))
         gallery_log("disable_logs", disable_logs)
         gallery_log("use_polling_observer", use_polling_observer)
         if monitor and monitor.thread and monitor.thread.is_alive():
@@ -240,9 +253,7 @@ async def delete_image(request):
         full_image_path = os.path.normpath(os.path.join(static_dir, relative_path))
         if not os.path.exists(full_image_path):
             return web.Response(status=404, text=f"File not found: {full_image_path}")
-        real_full_path = os.path.realpath(full_image_path)
-        real_static_dir = os.path.realpath(static_dir)
-        if not os.path.commonpath([real_full_path, real_static_dir]) == real_static_dir:
+        if not is_path_inside(full_image_path, static_dir):
             return web.Response(status=403, text="Access denied: File outside of static directory")
         os.remove(full_image_path)
         return web.Response(text=f"Image deleted: {image_url}")
@@ -286,15 +297,10 @@ async def move_image(request):
         if not os.path.exists(full_source_path):
             return web.Response(status=404, text=f"Source file not found: {full_source_path}")
         
-        real_source_path = os.path.realpath(full_source_path)
-        real_target_path = os.path.realpath(full_target_path)
-        real_static_dir = os.path.realpath(static_dir)
-        real_comfy_path = os.path.realpath(comfy_path)
-
-        if not os.path.commonpath([real_source_path, real_static_dir]) == real_static_dir or \
-            not os.path.commonpath([real_target_path, real_static_dir]) == real_static_dir or \
-            not os.path.commonpath([real_source_path, real_comfy_path]) == real_comfy_path or \
-            not os.path.commonpath([real_target_path, real_comfy_path]) == real_comfy_path:
+        if not is_path_inside(full_source_path, static_dir) or \
+            not is_path_inside(full_target_path, static_dir) or \
+            not is_path_inside(full_source_path, comfy_path) or \
+            not is_path_inside(full_target_path, comfy_path):
             return web.Response(status=403, text="Access denied: File outside of allowed directory")
         if os.path.isdir(full_target_path):
             full_target_path = os.path.join(full_target_path, os.path.basename(full_source_path))

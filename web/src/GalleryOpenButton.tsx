@@ -1,4 +1,6 @@
 import Button from 'antd/es/button/button';
+import Tooltip from 'antd/es/tooltip';
+import { PictureOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
 import { useLocalStorageState, useDebounceFn } from 'ahooks';
 import { useRef, useEffect } from 'react';
@@ -154,17 +156,31 @@ const GalleryOpenButton = () => {
     }
     // Not floating
     return (<>
-        <Button
-            id="comfy-ui-gallery-open-button"
-            type={"primary"}
-            onClick={() => {
-                if (!loading) setOpen(true);
-            }}
-            disabled={loading}
-            loading={loading}
+        <Tooltip
+            title={settings.buttonLabel || 'Launch ComfyUI Gallery'}
+            placement="bottom"
         >
-            {settings.buttonLabel || 'Open Gallery'}
-        </Button>
+            <Button
+                id="comfy-ui-gallery-open-button"
+                type={"primary"}
+                aria-label={settings.buttonLabel || 'Launch ComfyUI Gallery'}
+                icon={<PictureOutlined />}
+                onClick={() => {
+                    if (!loading) setOpen(true);
+                }}
+                disabled={loading}
+                loading={loading}
+                style={{
+                    width: 34,
+                    minWidth: 34,
+                    height: 32,
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            />
+        </Tooltip>
     </>);
 };
 

@@ -13,7 +13,7 @@ from .gallery_config import gallery_log
 
 
 class GalleryEventHandler(PatternMatchingEventHandler):
-    """Handles file system events, including symlinks, recursively."""
+    """Handles file system events inside the configured gallery root."""
 
     def __init__(self, base_path, patterns=None, ignore_patterns=None, ignore_directories=False, case_sensitive=True, debounce_interval=0.5, extensions=None):
         super().__init__(patterns=patterns, ignore_patterns=ignore_patterns, ignore_directories=ignore_directories, case_sensitive=case_sensitive)
@@ -130,7 +130,7 @@ class GalleryEventHandler(PatternMatchingEventHandler):
 
 
 class FileSystemMonitor:
-    """Monitors the output directory, including symlinks, recursively."""
+    """Monitors the output directory recursively."""
 
     def __init__(self, base_path, interval=1.0, use_polling_observer=False, extensions=None):
         self.base_path = base_path
@@ -175,7 +175,7 @@ class FileSystemMonitor:
             gallery_log(f"FileSystemMonitor: Error during initial scan: {e}")
 
         self.observer.schedule(self.event_handler, self.base_path, recursive=True)
-        self.observer.follow_directory_symlinks = True  # Ensure symlinks are followed
+        self.observer.follow_directory_symlinks = False
         self.observer.start()
         try:
             while True:
