@@ -35,6 +35,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Replaced native preview video controls with a custom row for reliable click-to-pause, mute, volume, loop, and fullscreen controls.
 - Added preview overlay actions for Delete, Move, and Rename, including confirmed batch handling for compacted cards.
 - Added explicit multi-select mode with per-card checkboxes and header-level bulk Delete and Move actions.
+- Added a Compact-mode bulk action prompt so multi-select Delete and Move can include related compacted files.
 - Refined multi-select so image clicks do not open previews, empty selection exits the mode, and Select All is available in the bulk action row.
 - Added a date range filter and hardened preview overlay action buttons so Move and Rename remain clickable above the preview layer.
 - Fixed bulk Move folder selection so interacting with the destination picker does not clear the selected media.

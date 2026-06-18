@@ -54,6 +54,7 @@ Restart ComfyUI after installation or updates.
 - Turn Autoplay on only when you want visible video cards to play in the grid.
 - Click a card to open the preview overlay with media actions and metadata.
 - Use checkboxes to enter multi-select mode for bulk move or delete.
+- When Compact is on, bulk move/delete asks whether to include related compacted files.
 - Open Settings for advanced options such as relative path, dark mode, shortcut, folder expansion, logging, observer mode, and scanned extensions.
 
 ## Settings

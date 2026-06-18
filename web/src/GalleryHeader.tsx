@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, AutoComplete, Button, DatePicker, Modal, Segmented, Select, message, Popconfirm, Tooltip, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { CloseOutlined, CloseSquareFilled, DeleteOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
@@ -7,6 +7,7 @@ import { useDebounce, useCountDown } from 'ahooks';
 import Typography from 'antd/es/typography/Typography';
 import { ComfyAppApi } from './ComfyAppApi';
 import GalleryFolderBar from './GalleryFolderBar';
+import type { FileDetails } from './types';
 
 const buildFolderTreeData = (folderKeys: string[]): DataNode[] => {
     const roots: DataNode[] = [];
@@ -39,6 +40,13 @@ const getGalleryRelativePath = (url: string) => {
 
 const getFileNameFromPath = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() || path;
 const getDateString = (value: string | string[]) => Array.isArray(value) ? value[0] : value;
+const isBulkMediaItem = (item: FileDetails) => (
+    item.type === 'image' || item.type === 'media' || item.type === 'audio' || item.type === '3d'
+);
+const getCompactGroupKey = (item: FileDetails) => {
+    const stem = item.name.replace(/\.[^/.]+$/, "");
+    return stem.replace(/-audio$/i, "").toLowerCase();
+};
 
 const GalleryHeader = () => {
     const {
@@ -145,6 +153,20 @@ const GalleryHeader = () => {
     const selectableImages = imagesDetailsList.filter(image =>
         image.type === 'image' || image.type === 'media' || image.type === 'audio' || image.type === '3d'
     );
+    const compactGroupByUrl = useMemo(() => {
+        const groups = new Map<string, FileDetails[]>();
+        selectableImages.filter(isBulkMediaItem).forEach(image => {
+            const key = getCompactGroupKey(image);
+            groups.set(key, [...(groups.get(key) ?? []), image]);
+        });
+
+        const byUrl = new Map<string, FileDetails[]>();
+        groups.forEach(group => {
+            if (group.length <= 1) return;
+            group.forEach(image => byUrl.set(image.url, group));
+        });
+        return byUrl;
+    }, [selectableImages]);
 
     const clearMultiSelect = () => {
         setSelectedImages([]);
@@ -156,9 +178,36 @@ const GalleryHeader = () => {
         setMultiSelectMode(selectableImages.length > 0);
     };
 
+    const resolveSelectedUrlsForCompact = (actionLabel: 'delete' | 'move') => {
+        if (!compactOutputs) return Promise.resolve(selectedImages);
+
+        const relatedUrls = new Set<string>();
+        selectedImages.forEach(url => {
+            const group = compactGroupByUrl.get(url);
+            group?.forEach(image => relatedUrls.add(image.url));
+        });
+
+        const expandedUrls = Array.from(new Set([...selectedImages, ...relatedUrls]));
+        const additionalCount = expandedUrls.length - selectedImages.length;
+        if (additionalCount <= 0) return Promise.resolve(selectedImages);
+
+        return new Promise<string[]>((resolve) => {
+            Modal.confirm({
+                title: `${actionLabel === 'delete' ? 'Delete' : 'Move'} compacted related files?`,
+                content: `Compact mode is on. ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'} belong to compacted groups with ${additionalCount} additional related file${additionalCount === 1 ? '' : 's'}. Include those related files too?`,
+                okText: `Include related (${expandedUrls.length})`,
+                cancelText: `Selected only (${selectedImages.length})`,
+                okButtonProps: actionLabel === 'delete' ? { danger: true } : undefined,
+                onOk: () => resolve(expandedUrls),
+                onCancel: () => resolve(selectedImages),
+            });
+        });
+    };
+
     const bulkDeleteSelected = async () => {
+        const urlsToDelete = await resolveSelectedUrlsForCompact('delete');
         let deleted = 0;
-        for (const url of selectedImages) {
+        for (const url of urlsToDelete) {
             try {
                 const success = await ComfyAppApi.deleteImage(url);
                 if (success) deleted++;
@@ -179,8 +228,9 @@ const GalleryHeader = () => {
         if (!moveTargetFolder) return;
         setBulkMoving(true);
         try {
+            const urlsToMove = await resolveSelectedUrlsForCompact('move');
             let moved = 0;
-            for (const url of selectedImages) {
+            for (const url of urlsToMove) {
                 const sourcePath = getGalleryRelativePath(url);
                 const fileName = getFileNameFromPath(sourcePath);
                 const targetPath = `${moveTargetFolder}/${fileName}`;
