@@ -141,6 +141,13 @@ export function parseComfyMetadata(metadata: Metadata): Record<string, string> {
         fields.positive = fields.negative;
         fields.negative = '';
     }
+    if (!fields.positive && metadata.prompt && typeof metadata.prompt === 'object') {
+        const directPrompt = metadata.prompt as Record<string, any>;
+        const directPositive = directPrompt.positive ?? directPrompt.positive_prompt ?? directPrompt.prompt_positive;
+        if (typeof directPositive === 'string' && directPositive.trim() !== '') {
+            fields.positive = directPositive;
+        }
+    }
     // Assign all fields to result
     result["Model"] = fields.model || '';
     result["Positive Prompt"] = fields.positive || '';

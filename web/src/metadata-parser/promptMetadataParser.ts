@@ -254,11 +254,12 @@ export function extractPromptsFromPromptObject(prompt: any): ExtractedPrompts {
         for (const key of ['prompt', 'text']) {
             const val = inputs[key];
             let resolved = null;
-            if (isPlainPromptString(val) && isPositivePrompt(val)) {
+            const contextLooksPositive = /positive/i.test(title) || /positive/i.test(key) || ct === 'CLIPTextEncode' || ct === 'CR Prompt Text';
+            if (isPlainPromptString(val) && (isPositivePrompt(val) || (contextLooksPositive && !isNegativePrompt(val)))) {
                 resolved = val;
             } else if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
                 const rec = resolvePromptStringFromPromptObject(prompt, val);
-                if (rec && isPositivePrompt(rec)) resolved = rec;
+                if (rec && (isPositivePrompt(rec) || (contextLooksPositive && !isNegativePrompt(rec)))) resolved = rec;
             }
             if (resolved) {
                 let priority = 0;

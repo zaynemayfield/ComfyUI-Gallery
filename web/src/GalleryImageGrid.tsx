@@ -533,8 +533,8 @@ const PreviewMetadataPanel = ({ image }: { image: FileDetails }) => {
             title="Metadata"
             extra={<Button size="small" onClick={() => setShowRaw(value => !value)}>{showRaw ? 'Parsed' : 'Raw'}</Button>}
             style={{
-                width: 380,
-                maxWidth: '30vw',
+                width: 560,
+                maxWidth: '42vw',
                 maxHeight: 'calc(92vh - 66px)',
                 overflow: 'auto',
             }}
@@ -558,8 +558,8 @@ const PreviewMetadataPanel = ({ image }: { image: FileDetails }) => {
                     size="small"
                     items={metadataItems}
                     styles={{
-                        label: { width: 110 },
-                        content: { maxWidth: 230 },
+                        label: { width: 130 },
+                        content: { maxWidth: 390 },
                     }}
                 />
             )}
@@ -608,7 +608,7 @@ const PreviewFrame = ({
             >
                 <div
                     style={{
-                        maxWidth: metadataVisible ? 'calc(96vw - 392px)' : '96vw',
+                        maxWidth: metadataVisible ? 'calc(96vw - 572px)' : '96vw',
                         maxHeight: 'calc(92vh - 58px)',
                         display: 'flex',
                         alignItems: 'center',
