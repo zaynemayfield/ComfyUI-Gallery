@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an improvement for ComfyUI Gallery
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow
+      description: What workflow would this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you want.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Mention any workarounds or alternatives.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This affects file actions such as delete, move, rename, or folder operations.
+        - label: This affects path handling or security boundaries.
+        - label: This affects frontend UI only.

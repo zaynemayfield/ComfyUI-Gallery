@@ -1,0 +1,40 @@
+# Changelog
+
+All notable changes in this fork are summarized here. Detailed implementation notes are in [FORK_NOTES.md](FORK_NOTES.md).
+
+## 2.8.0 - 2026-06-18
+
+### Added
+
+- Toolbar-style ComfyUI Gallery entry point.
+- Compact header with search scopes, sort controls, filters, date controls, subfolder toggle, preview size, batch size, compact mode, and autoplay.
+- Folder row and folder actions for create, rename, move, and delete.
+- Multi-select bulk move/delete.
+- Compact output grouping for related image/video/audio-variant outputs.
+- Bulk action prompt for compacted related files.
+- Preview overlay actions for delete, move, rename, metadata, and raw metadata.
+- Persistent video volume, mute, and loop controls.
+- Lazy cached video thumbnails.
+- Video duration metadata when `ffprobe` is available.
+- Include Subfolders toggle.
+- Date section navigation.
+- Public documentation, security notes, contributing guide, and release checklist.
+
+### Changed
+
+- Autoplay defaults to off.
+- Gallery button remains clickable during initial media scanning.
+- Settings modal only contains advanced options.
+- Image cards fit full images instead of cropping.
+- Modal layout is constrained to the viewport to avoid a page-level scrollbar.
+
+### Security
+
+- Gallery paths are constrained to ComfyUI's output directory.
+- Absolute paths and path traversal outside the output directory are rejected.
+- Static gallery serving does not follow symlinks.
+- File and folder operations reuse backend boundary checks.
+
+## Upstream History
+
+This fork is based on [PanicTitan/ComfyUI-Gallery](https://github.com/PanicTitan/ComfyUI-Gallery). See upstream release history for changes before this fork.
