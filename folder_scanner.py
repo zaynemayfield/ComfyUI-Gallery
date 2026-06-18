@@ -202,11 +202,12 @@ def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_exte
                             "signature": signature,
                             "data": file_data,
                         }
-                        folder_content[filename] = file_data
+                        folder_content[entry] = file_data
                     except Exception as e:
                         print(f"Gallery Node: Error processing file {full_path}: {e}")
 
             folder_key = os.path.join(base_path, relative_path) if relative_path else base_path
+            folder_key = folder_key.replace("\\", "/")
             folders_data[folder_key] = folder_content
 
         except Exception as e:
