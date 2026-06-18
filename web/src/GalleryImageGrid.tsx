@@ -43,6 +43,12 @@ type CompactFileDetails = FileDetails & {
     compactCount?: number;
 };
 
+type DateDividerRow = {
+    date: string;
+    rowIndex: number;
+    mediaBefore: number;
+};
+
 const getCompactGroupKey = (item: FileDetails) => {
     if (!isMediaItem(item)) return item.name;
     const stem = item.name.replace(/\.[^/.]+$/, "");
@@ -125,7 +131,7 @@ const GalleryImageGrid = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<any>(null);
     const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
-    const [pendingScrollDate, setPendingScrollDate] = useState<string | null>(null);
+    const [pendingScrollTarget, setPendingScrollTarget] = useState<DateDividerRow | null>(null);
     const previewLayout = useMemo(
         () => getPreviewLayout(gridSize.width, previewSize),
         [gridSize.width, previewSize]
@@ -188,7 +194,7 @@ const GalleryImageGrid = () => {
     );
     const dateDividerRows = useMemo(() => {
         let mediaBefore = 0;
-        return imagesDetailsList.reduce<Array<{ date: string; rowIndex: number; mediaBefore: number }>>((rows, item, index) => {
+        return imagesDetailsList.reduce<DateDividerRow[]>((rows, item, index) => {
             if (isMediaItem(item)) mediaBefore++;
             if (item.type === 'divider' && index % previewLayout.columnCount === 0) {
                 rows.push({
@@ -200,6 +206,10 @@ const GalleryImageGrid = () => {
             return rows;
         }, []);
     }, [imagesDetailsList, previewLayout.columnCount]);
+    const totalMediaCount = useMemo(
+        () => imagesDetailsList.filter(isMediaItem).length,
+        [imagesDetailsList]
+    );
     const visibleDateDividerRows = useMemo(() => {
         return dateDividerRows.filter(row =>
             visibleImagesDetailsList[row.rowIndex * previewLayout.columnCount]?.type === 'divider'
@@ -224,25 +234,46 @@ const GalleryImageGrid = () => {
 
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
-        setPendingScrollDate(null);
+        setPendingScrollTarget(null);
     }, [currentFolder, searchFileName, sortMethod, mediaFilter, compactOutputs, mediaBatchSize]);
 
     useEffect(() => {
-        if (pendingScrollDate === null) return;
-        const targetRow = visibleDateDividerRows.find(row => row.date === pendingScrollDate);
-        if (!targetRow) return;
-        gridRef.current?.scrollToItem?.({
-            rowIndex: targetRow.rowIndex,
-            columnIndex: 0,
-            align: 'start',
-        });
-        setPendingScrollDate(null);
-    }, [pendingScrollDate, visibleDateDividerRows]);
+        if (pendingScrollTarget === null) return;
+        const requiredVisibleLimit = Math.max(mediaBatchSize, pendingScrollTarget.mediaBefore + 1);
+        const targetRow = visibleDateDividerRows.find(row => row.date === pendingScrollTarget.date);
 
-    const scrollToDateRow = useCallback((target: { date: string; mediaBefore: number }) => {
+        if (!targetRow) {
+            setVisibleMediaLimit(currentLimit => {
+                if (currentLimit < requiredVisibleLimit) return requiredVisibleLimit;
+                if (currentLimit < totalMediaCount) return Math.min(totalMediaCount, currentLimit + mediaBatchSize);
+                return currentLimit;
+            });
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            gridRef.current?.resetAfterIndices?.({
+                rowIndex: 0,
+                columnIndex: 0,
+                shouldForceUpdate: false,
+            });
+            window.requestAnimationFrame(() => {
+                gridRef.current?.scrollToItem?.({
+                    rowIndex: targetRow.rowIndex,
+                    columnIndex: 0,
+                    align: 'start',
+                });
+                setPendingScrollTarget(null);
+            });
+        }, 80);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [pendingScrollTarget, visibleDateDividerRows, mediaBatchSize, totalMediaCount]);
+
+    const scrollToDateRow = useCallback((target: DateDividerRow) => {
         const requiredVisibleLimit = Math.max(mediaBatchSize, target.mediaBefore + 1);
         setVisibleMediaLimit(currentLimit => Math.max(currentLimit, requiredVisibleLimit));
-        setPendingScrollDate(target.date);
+        setPendingScrollTarget(target);
     }, [mediaBatchSize]);
 
     const handleInfoClick = useCallback((imageName: string) => {
@@ -268,6 +299,7 @@ const GalleryImageGrid = () => {
             const currentDateIndex = dateDividerRows.findIndex(row => row.date === image.name);
             const previousDate = currentDateIndex > 0 ? dateDividerRows[currentDateIndex - 1] : undefined;
             const nextDate = currentDateIndex >= 0 && currentDateIndex < dateDividerRows.length - 1 ? dateDividerRows[currentDateIndex + 1] : undefined;
+            const isJumping = pendingScrollTarget !== null;
             const jumpButtonStyle: React.CSSProperties = {
                 height: 22,
                 padding: '0 8px',
@@ -319,6 +351,8 @@ const GalleryImageGrid = () => {
                             <Button
                                 size="small"
                                 type="default"
+                                loading={pendingScrollTarget?.date === previousDate.date}
+                                disabled={isJumping}
                                 style={jumpButtonStyle}
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -332,6 +366,8 @@ const GalleryImageGrid = () => {
                             <Button
                                 size="small"
                                 type="primary"
+                                loading={pendingScrollTarget?.date === nextDate.date}
+                                disabled={isJumping}
                                 style={jumpButtonStyle}
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -340,6 +376,18 @@ const GalleryImageGrid = () => {
                             >
                                 ↓ Next Day
                             </Button>
+                        )}
+                        {isJumping && (
+                            <span
+                                style={{
+                                    flex: '0 0 auto',
+                                    fontSize: 11,
+                                    color: '#1677ff',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                Loading day...
+                            </span>
                         )}
                         <div
                             style={{
@@ -387,7 +435,7 @@ const GalleryImageGrid = () => {
                 />
             </div>
         );
-    }, [gridSize.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow]);
+    }, [gridSize.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow, pendingScrollTarget]);
 
     useEffect(() => {
         const { width, height } = autoSizer;

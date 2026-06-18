@@ -30,6 +30,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Reduced date divider rows to a compact left-aligned label with a thin line and minimal vertical space.
 - Added Previous Day and Next Day controls to date dividers for jumping between creation-date sections.
 - Fixed day navigation so it expands the visible media batch before jumping to unloaded date sections.
+- Added a loading indicator and delayed scroll handoff for date jumps that need additional media rows to render first.
 - Fixed folder scanning so empty folders are returned and visible after creation.
 
 ### ComfyUI toolbar entry point
