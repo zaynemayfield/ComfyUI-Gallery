@@ -294,20 +294,6 @@ const GalleryHeader = () => {
                             onChange={(_, dateString) => setDateRange([dateRange[0], getDateString(dateString) || null])}
                             style={{ width: 118 }}
                         />
-                        <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
-                            <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
-                                Dates
-                            </Typography>
-                            <Segmented
-                                size="small"
-                                options={[
-                                    { label: 'Off', value: false },
-                                    { label: 'On', value: true },
-                                ]}
-                                value={settings.showDateDivider}
-                                onChange={value => setSettings({ ...settings, showDateDivider: Boolean(value) })}
-                            />
-                        </Flex>
                     </Flex>
                     <Flex vertical gap={2}>
                         <Segmented
@@ -344,6 +330,20 @@ const GalleryHeader = () => {
                                 ]}
                                 value={settings.autoPlayVideos}
                                 onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
+                            />
+                        </Flex>
+                        <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
+                            <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
+                                Date Sections
+                            </Typography>
+                            <Segmented
+                                size="small"
+                                options={[
+                                    { label: 'Off', value: false },
+                                    { label: 'On', value: true },
+                                ]}
+                                value={settings.showDateDivider}
+                                onChange={value => setSettings({ ...settings, showDateDivider: Boolean(value) })}
                             />
                         </Flex>
                         <Tooltip title="Group related outputs with the same filename, including -audio variants, into one browsable card." placement="bottom">

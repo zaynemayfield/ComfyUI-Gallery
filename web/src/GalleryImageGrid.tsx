@@ -691,6 +691,7 @@ const GalleryImageGrid = () => {
         () => getPreviewLayout(autoSizer.width, previewSize),
         [autoSizer.width, previewSize]
     );
+    const showDateSections = settings.showDateDivider && searchFileName.trim() === "";
     const imagesDetailsList = useMemo(() => {
         let list: FileDetails[] = getFolderMediaList(data, currentFolder);
         if (mediaFilter === 'images') {
@@ -717,7 +718,7 @@ const GalleryImageGrid = () => {
         }
         if (sortMethod !== 'Name ↑' && sortMethod !== 'Name ↓') {
             list = list.sort((a, b) => (sortMethod === 'Newest' ? (b.timestamp || 0) - (a.timestamp || 0) : (a.timestamp || 0) - (b.timestamp || 0)));
-            if (!settings.showDateDivider) return list;
+            if (!showDateSections) return list;
             const grouped: { [date: string]: FileDetails[] } = {};
             list.forEach(item => {
                 const date = item.timestamp ? new Date(item.timestamp * 1000).toISOString().slice(0, 10) : 'Unknown';
@@ -748,7 +749,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, compactOutputs, previewLayout.columnCount, settings.showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, searchScope, dateRange, compactOutputs, previewLayout.columnCount, showDateSections]);
     const visibleImagesDetailsList = useMemo(
         () => takeMediaBatch(imagesDetailsList, visibleMediaLimit),
         [imagesDetailsList, visibleMediaLimit]
@@ -808,6 +809,15 @@ const GalleryImageGrid = () => {
         setVisibleMediaLimit(mediaBatchSize);
         setPendingScrollTarget(null);
     }, [currentFolder, searchFileName, searchScope, sortMethod, mediaFilter, dateRange, compactOutputs, mediaBatchSize]);
+
+    useEffect(() => {
+        gridRef.current?.resetAfterIndices?.({
+            columnIndex: 0,
+            rowIndex: 0,
+            shouldForceUpdate: true,
+        });
+        gridRef.current?.scrollTo?.({ scrollLeft: 0 });
+    }, [showDateSections, previewLayout.rowHeight, previewLayout.columnCount, visibleImagesDetailsList.length]);
 
     useEffect(() => {
         if (pendingScrollTarget === null) return;
