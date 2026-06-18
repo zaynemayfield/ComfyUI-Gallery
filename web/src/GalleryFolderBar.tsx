@@ -62,47 +62,32 @@ const GalleryFolderBar = () => {
 
     return (
         <Flex
-            vertical
-            gap={4}
+            align="center"
+            gap={6}
+            wrap="wrap"
             style={{
                 borderTop: '1px solid rgba(127, 127, 127, 0.18)',
                 paddingTop: 7,
                 paddingBottom: 2,
+                minHeight: 32,
+                rowGap: 4,
             }}
         >
-            <Flex
-                align="center"
-                gap={6}
-                wrap="wrap"
-                style={{
-                    minHeight: 26,
-                }}
-            >
-                <FolderOutlined style={{ color: '#69b1ff', fontSize: 14 }} />
-                {rootFolders.map((folder, index) => (
-                    <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        {index > 0 && <Separator />}
-                        <FolderButton
-                            active={activeRoot === folder}
-                            onClick={() => selectFolder(folder)}
-                        >
-                            {getFolderLabel(folder)}
-                        </FolderButton>
-                    </span>
-                ))}
-            </Flex>
+            <FolderOutlined style={{ color: '#69b1ff', fontSize: 14 }} />
+            {rootFolders.map((folder, index) => (
+                <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {index > 0 && <Separator />}
+                    <FolderButton
+                        active={activeRoot === folder}
+                        onClick={() => selectFolder(folder)}
+                    >
+                        {getFolderLabel(folder)}
+                    </FolderButton>
+                </span>
+            ))}
             {(ancestorFolders.length > 0 || childFolders.length > 0) && (
-                <Flex
-                    align="center"
-                    gap={6}
-                    wrap="wrap"
-                    style={{
-                        minHeight: 26,
-                        marginLeft: 20,
-                        paddingLeft: 8,
-                        borderLeft: '2px solid rgba(105, 177, 255, 0.35)',
-                    }}
-                >
+                <>
+                    <RightOutlined style={{ fontSize: 10, opacity: 0.6, marginLeft: 2 }} />
                     <BranchesOutlined style={{ color: '#69b1ff', fontSize: 13 }} />
                     {ancestorFolders.map((folder, index) => (
                         <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -120,7 +105,7 @@ const GalleryFolderBar = () => {
                     )}
                     {childFolders.map((folder, index) => (
                         <span key={folder} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            {index > 0 && <Separator />}
+                            {(index > 0 || ancestorFolders.length > 0) && <Separator />}
                             <FolderButton
                                 active={folder === currentFolder}
                                 onClick={() => selectFolder(folder)}
@@ -130,7 +115,7 @@ const GalleryFolderBar = () => {
                             </FolderButton>
                         </span>
                     ))}
-                </Flex>
+                </>
             )}
         </Flex>
     );
