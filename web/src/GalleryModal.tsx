@@ -18,6 +18,7 @@ const GalleryModal = () => {
             title={<GalleryHeader />}
             centered
             open={open}
+            closable={false}
             afterOpenChange={setOpen}
             onOk={() => setOpen(false)}
             onCancel={() => setOpen(false)}

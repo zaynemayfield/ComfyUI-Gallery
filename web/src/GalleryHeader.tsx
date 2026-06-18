@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Flex, AutoComplete, Button, Segmented, message, Popconfirm, Tooltip } from 'antd';
-import { CloseSquareFilled, FolderOpenOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
+import { CloseOutlined, CloseSquareFilled, FolderOpenOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
 import Typography from 'antd/es/typography/Typography';
@@ -14,6 +14,7 @@ const GalleryHeader = () => {
         setShowSettings,
         setSearchFileName,
         sortMethod, setSortMethod,
+        mediaFilter, setMediaFilter,
         imagesAutoCompleteNames,
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
@@ -70,6 +71,14 @@ const GalleryHeader = () => {
         }
     }, [debouncedSearch, imagesAutoCompleteNames, setAutoCompleteOptions]);
 
+    const toggleDateSort = () => {
+        setSortMethod(sortMethod === 'Newest' ? 'Oldest' : 'Newest');
+    };
+
+    const toggleNameSort = () => {
+        setSortMethod(sortMethod === 'Name ↑' ? 'Name ↓' : 'Name ↑');
+    };
+
     return (
         <Flex vertical gap={8} style={{ width: '100%' }}>
             <Flex
@@ -111,10 +120,30 @@ const GalleryHeader = () => {
                             clearIcon: <CloseSquareFilled />
                         }}
                     />
-                    <Segmented<string>
-                        options={['Newest', 'Oldest', 'Name ↑', 'Name ↓']}
-                        value={sortMethod}
-                        onChange={value => setSortMethod(value as any)}
+                    <Button
+                        size="middle"
+                        type={sortMethod === 'Newest' || sortMethod === 'Oldest' ? 'primary' : 'default'}
+                        onClick={toggleDateSort}
+                        style={{ minWidth: 78 }}
+                    >
+                        {sortMethod === 'Oldest' ? 'Oldest' : 'Newest'}
+                    </Button>
+                    <Button
+                        size="middle"
+                        type={sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? 'primary' : 'default'}
+                        onClick={toggleNameSort}
+                        style={{ minWidth: 82 }}
+                    >
+                        {sortMethod === 'Name ↓' ? 'Name ↓' : 'Name ↑'}
+                    </Button>
+                    <Segmented
+                        options={[
+                            { label: 'All', value: 'all' },
+                            { label: 'Images', value: 'images' },
+                            { label: 'Videos', value: 'videos' },
+                        ]}
+                        value={mediaFilter}
+                        onChange={value => setMediaFilter(value as any)}
                     />
             {selectedImages && selectedImages.length > 0 && (
                 <>
@@ -254,14 +283,25 @@ const GalleryHeader = () => {
                 </div>
             )}
                 </Flex>
-                <Button
-                    size={"middle"}
-                    icon={<SettingOutlined />}
-                    onClick={() => setShowSettings(true)}
-                    style={{ marginLeft: 'auto' }}
-                >
-                    Settings
-                </Button>
+                <Flex align="center" gap={8} style={{ marginLeft: 'auto' }}>
+                    <Button
+                        size={"middle"}
+                        icon={<SettingOutlined />}
+                        onClick={() => setShowSettings(true)}
+                    >
+                        Settings
+                    </Button>
+                    <Button
+                        danger
+                        type="primary"
+                        size="middle"
+                        icon={<CloseOutlined />}
+                        onClick={() => setOpen(false)}
+                        aria-label="Close gallery"
+                    >
+                        Close
+                    </Button>
+                </Flex>
             </Flex>
             <GalleryFolderBar />
         </Flex>

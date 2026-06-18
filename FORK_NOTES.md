@@ -9,6 +9,9 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added a compact title/logo area to the gallery modal header.
 - Moved Settings to the far right of the header.
 - Moved sorting controls next to a narrower search input.
+- Replaced separate Newest/Oldest and Name up/down controls with compact toggle buttons.
+- Added an All/Images/Videos media filter.
+- Replaced the default modal close icon with a red Close button in the header row.
 - Replaced the left header toggle with a compact folder-tree toggle icon.
 - Added a horizontal folder row below the header for root folders and subfolders.
 - Updated folder selection so parent folders show media from their descendant folders.

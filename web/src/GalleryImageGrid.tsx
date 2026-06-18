@@ -16,6 +16,7 @@ const GalleryImageGrid = () => {
         currentFolder,
         searchFileName,
         sortMethod,
+        mediaFilter,
         gridSize,
         setGridSize,
         autoSizer,
@@ -32,6 +33,11 @@ const GalleryImageGrid = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const imagesDetailsList = useMemo(() => {
         let list: FileDetails[] = getFolderMediaList(data, currentFolder);
+        if (mediaFilter === 'images') {
+            list = list.filter(imageInfo => imageInfo.type === 'image');
+        } else if (mediaFilter === 'videos') {
+            list = list.filter(imageInfo => imageInfo.type === 'media');
+        }
         if (searchFileName && searchFileName.trim() !== "") {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
@@ -69,7 +75,7 @@ const GalleryImageGrid = () => {
             default:
                 return list;
         }
-    }, [currentFolder, data, sortMethod, searchFileName, gridSize.columnCount, settings.showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, gridSize.columnCount, settings.showDateDivider]);
 
     const imagesUrlsLists = useMemo(() =>
         imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio" || image.type === "3d").map(image => `${BASE_PATH}${image.url}`),

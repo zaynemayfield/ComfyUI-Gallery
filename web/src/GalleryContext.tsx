@@ -46,6 +46,8 @@ export interface SettingsState {
     videoThumbFit: 'width' | 'height';
 }
 
+export type GalleryMediaFilter = 'all' | 'images' | 'videos';
+
 export const DEFAULT_SETTINGS: SettingsState = {
     relativePath: './',
     buttonBoxQuery: 'div.flex.gap-2.mx-2',
@@ -78,6 +80,8 @@ export interface GalleryContextType {
     setShowRawMetadata: Dispatch<SetStateAction<boolean>>;
     sortMethod: 'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓';
     setSortMethod: Dispatch<SetStateAction<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>>;
+    mediaFilter: GalleryMediaFilter;
+    setMediaFilter: Dispatch<SetStateAction<GalleryMediaFilter>>;
     imageInfoName: string | undefined;
     setImageInfoName: Dispatch<SetStateAction<string | undefined>>;
     open: boolean;
@@ -117,6 +121,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [showSettings, setShowSettings] = useState(false);
     const [showRawMetadata, setShowRawMetadata] = useState(false);
     const [sortMethod, setSortMethod] = useState<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>("Newest");
+    const [mediaFilter, setMediaFilter] = useState<GalleryMediaFilter>('all');
     const [imageInfoName, setImageInfoName] = useState<string | undefined>(undefined);
     const [open, setOpen] = useState(false);
     const [previewingVideo, setPreviewingVideo] = useState<string | undefined>(undefined);
@@ -197,6 +202,11 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     // Memoized list of all images in the current folder
     const imagesDetailsList = useMemo(() => {
         let list: FileDetails[] = getFolderMediaList(data, currentFolder);
+        if (mediaFilter === 'images') {
+            list = list.filter(imageInfo => imageInfo.type === 'image');
+        } else if (mediaFilter === 'videos') {
+            list = list.filter(imageInfo => imageInfo.type === 'media');
+        }
         if (searchFileName && searchFileName.trim() !== "") {
             const searchTerm = searchFileName.toLowerCase();
             list = list.filter(imageInfo => imageInfo.name.toLowerCase().includes(searchTerm));
@@ -234,7 +244,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             default:
                 return list;
         }
-    }, [currentFolder, data, sortMethod, searchFileName, gridSize.columnCount, showDateDivider]);
+    }, [currentFolder, data, mediaFilter, sortMethod, searchFileName, gridSize.columnCount, showDateDivider]);
 
     // Memoized list of image URLs for preview
     const imagesUrlsLists = useMemo(() =>
@@ -348,6 +358,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         showSettings, setShowSettings,
         showRawMetadata, setShowRawMetadata,
         sortMethod, setSortMethod,
+        mediaFilter, setMediaFilter,
         imageInfoName, setImageInfoName,
         open, setOpen,
         previewingVideo, setPreviewingVideo,
@@ -373,6 +384,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         showSettings,
         showRawMetadata,
         sortMethod,
+        mediaFilter,
         imageInfoName,
         open,
         previewingVideo,
