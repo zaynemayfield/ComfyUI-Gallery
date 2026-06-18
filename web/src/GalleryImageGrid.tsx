@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import { Empty, Image, Spin } from 'antd';
+import { Button, Empty, Image, Spin } from 'antd';
 import { AutoSizer } from 'react-virtualized';
 import { VariableSizeGrid } from 'react-window';
 import ImageCard, { ImageCardHeight, ImageCardWidth } from './ImageCard';
@@ -77,7 +77,9 @@ const GalleryImageGrid = () => {
         mediaBatchSize
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
+    const gridRef = useRef<any>(null);
     const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
+    const [pendingScrollRow, setPendingScrollRow] = useState<number | null>(null);
     const previewLayout = useMemo(
         () => getPreviewLayout(gridSize.width, previewSize),
         [gridSize.width, previewSize]
@@ -135,6 +137,20 @@ const GalleryImageGrid = () => {
         () => Math.ceil(visibleImagesDetailsList.length / Math.max(1, previewLayout.columnCount)),
         [visibleImagesDetailsList.length, previewLayout.columnCount]
     );
+    const dateDividerRows = useMemo(() => {
+        let mediaBefore = 0;
+        return imagesDetailsList.reduce<Array<{ date: string; rowIndex: number; mediaBefore: number }>>((rows, item, index) => {
+            if (isMediaItem(item)) mediaBefore++;
+            if (item.type === 'divider' && index % previewLayout.columnCount === 0) {
+                rows.push({
+                    date: item.name,
+                    rowIndex: Math.floor(index / previewLayout.columnCount),
+                    mediaBefore,
+                });
+            }
+            return rows;
+        }, []);
+    }, [imagesDetailsList, previewLayout.columnCount]);
     const getRowHeight = useCallback((rowIndex: number) => {
         const firstItemInRow = visibleImagesDetailsList[rowIndex * previewLayout.columnCount];
         return firstItemInRow?.type === 'divider' ? DATE_DIVIDER_ROW_HEIGHT : previewLayout.rowHeight;
@@ -154,7 +170,26 @@ const GalleryImageGrid = () => {
 
     useEffect(() => {
         setVisibleMediaLimit(mediaBatchSize);
+        setPendingScrollRow(null);
     }, [currentFolder, searchFileName, sortMethod, mediaFilter, mediaBatchSize]);
+
+    useEffect(() => {
+        if (pendingScrollRow === null) return;
+        const targetIndex = pendingScrollRow * previewLayout.columnCount;
+        if (!visibleImagesDetailsList[targetIndex]) return;
+        gridRef.current?.scrollToItem?.({
+            rowIndex: pendingScrollRow,
+            columnIndex: 0,
+            align: 'start',
+        });
+        setPendingScrollRow(null);
+    }, [pendingScrollRow, previewLayout.columnCount, visibleImagesDetailsList]);
+
+    const scrollToDateRow = useCallback((target: { rowIndex: number; mediaBefore: number }) => {
+        const requiredVisibleLimit = Math.max(mediaBatchSize, target.mediaBefore + 1);
+        setVisibleMediaLimit(currentLimit => Math.max(currentLimit, requiredVisibleLimit));
+        setPendingScrollRow(target.rowIndex);
+    }, [mediaBatchSize]);
 
     const handleInfoClick = useCallback((imageName: string) => {
         // Set the info modal target
@@ -176,6 +211,15 @@ const GalleryImageGrid = () => {
         if (!image) return null;
         if (image.type === 'divider') {
             if (columnIndex !== 0) return null;
+            const currentDateIndex = dateDividerRows.findIndex(row => row.rowIndex === rowIndex);
+            const previousDate = currentDateIndex > 0 ? dateDividerRows[currentDateIndex - 1] : undefined;
+            const nextDate = currentDateIndex >= 0 && currentDateIndex < dateDividerRows.length - 1 ? dateDividerRows[currentDateIndex + 1] : undefined;
+            const jumpButtonStyle: React.CSSProperties = {
+                height: 20,
+                padding: '0 6px',
+                fontSize: 11,
+                lineHeight: '18px',
+            };
             return (
                 <div
                     key={`divider-${index}`}
@@ -214,6 +258,32 @@ const GalleryImageGrid = () => {
                         >
                             {image.name}
                         </span>
+                        {previousDate && (
+                            <Button
+                                size="small"
+                                type="text"
+                                style={jumpButtonStyle}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    scrollToDateRow(previousDate);
+                                }}
+                            >
+                                Previous Day
+                            </Button>
+                        )}
+                        {nextDate && (
+                            <Button
+                                size="small"
+                                type="text"
+                                style={jumpButtonStyle}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    scrollToDateRow(nextDate);
+                                }}
+                            >
+                                Next Day
+                            </Button>
+                        )}
                         <div
                             style={{
                                 flex: 1,
@@ -260,7 +330,7 @@ const GalleryImageGrid = () => {
                 />
             </div>
         );
-    }, [gridSize.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight]);
+    }, [gridSize.width, visibleImagesDetailsList, handleInfoClick, setPreviewingVideo, currentFolder, previewLayout.columnCount, previewLayout.cardWidth, previewLayout.cardHeight, dateDividerRows, scrollToDateRow]);
 
     useEffect(() => {
         const { width, height } = autoSizer;
@@ -492,6 +562,7 @@ const GalleryImageGrid = () => {
                             const layout = getPreviewLayout(width, previewSize);
                             return (
                                 <VariableSizeGrid
+                                    ref={gridRef}
                                     key={`${previewSize}-${layout.columnCount}-${visibleImagesDetailsList.length}`}
                                     columnCount={layout.columnCount}
                                     rowCount={rowCount}
