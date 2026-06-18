@@ -161,6 +161,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         defaultValue: DEFAULT_SETTINGS,
         listenStorageChange: true,
     });
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
 
     useEffect(() => {
         if (data && data.folders) {
@@ -185,8 +186,9 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
                 setSettings(merged as SettingsState);
             }
         } catch (e) { }
-
-        runAsync();
+        finally {
+            setSettingsLoaded(true);
+        }
 
         ComfyAppApi.onFileChange((event) => {
             console.log("file_change:", event.detail);
@@ -211,7 +213,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        if (settingsState?.relativePath) {
+        if (settingsLoaded && settingsState?.relativePath) {
             setCurrentFolder("");
             ComfyAppApi.startMonitoring(
                 settingsState.relativePath,
@@ -221,7 +223,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             );
             runAsync();
         }
-    }, [settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver, JSON.stringify(settingsState?.scanExtensions)]);
+    }, [settingsLoaded, settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver, JSON.stringify(settingsState?.scanExtensions)]);
 
     // Memoized list of all images in the current folder
     const imagesDetailsList = useMemo(() => {

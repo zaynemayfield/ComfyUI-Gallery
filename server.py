@@ -4,6 +4,7 @@ import os
 import folder_paths
 import time
 from datetime import datetime
+import gzip
 import json
 import math
 import pathlib
@@ -210,6 +211,19 @@ def sanitize_json_data(data):
         return str(data)
 
 
+def json_response(request, data):
+    body = json.dumps(data, separators=(",", ":")).encode("utf-8")
+    headers = {
+        "Cache-Control": "no-cache",
+        "Vary": "Accept-Encoding",
+    }
+    accept_encoding = request.headers.get("Accept-Encoding", "")
+    if "gzip" in accept_encoding.lower() and len(body) > 1024:
+        body = gzip.compress(body, compresslevel=5, mtime=0)
+        headers["Content-Encoding"] = "gzip"
+    return web.Response(body=body, headers=headers, content_type="application/json")
+
+
 @PromptServer.instance.routes.get("/Gallery/settings")
 async def get_settings(request):
     return web.json_response(load_settings())
@@ -288,8 +302,7 @@ async def get_gallery_images(request):
                     return web.Response(status=500, text=str(folders_with_metadata))
 
                 sanitized_folders = sanitize_json_data(folders_with_metadata)
-                json_string = json.dumps({"folders": sanitized_folders})
-                return web.Response(text=json_string, content_type="application/json")
+                return json_response(request, {"folders": sanitized_folders})
             except Exception as e:
                     gallery_log(f"Error in on_scan_complete: {e}")
                     return web.Response(status=500, text=str(e))

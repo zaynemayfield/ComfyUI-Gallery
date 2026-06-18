@@ -16,6 +16,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Persistent video volume, mute, and loop controls.
 - Lazy cached video thumbnails.
 - Persistent server-side media index for faster refreshes and repeat browsing from other clients.
+- Compressed gallery JSON responses and avoided duplicate startup image fetches.
 - Video duration metadata when `ffprobe` is available.
 - Include Subfolders toggle.
 - Date section navigation.
