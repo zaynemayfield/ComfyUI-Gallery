@@ -36,6 +36,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Full raw metadata loads on demand from the preview panel instead of being sent with every gallery list item.
 - Repeat gallery refreshes use a lightweight persistent index and compressed responses.
 - Multi-select controls no longer reserve header space while inactive, while preserving grid scroll position when selection mode changes.
+- The media grid stays mounted while header controls resize so selecting or clearing media does not jump back to the top.
 
 ### Security
 

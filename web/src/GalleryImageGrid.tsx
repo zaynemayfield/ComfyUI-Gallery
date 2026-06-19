@@ -1223,6 +1223,11 @@ const GalleryImageGrid = () => {
         });
     }, [imagesDetailsList, mediaBatchSize]);
 
+    const getCurrentGridScrollTop = useCallback(() => {
+        const gridElement = containerRef.current?.querySelector('.grid-element') as HTMLElement | null;
+        return gridElement?.scrollTop ?? scrollTopRef.current;
+    }, []);
+
     const handleGridScroll = useCallback(({ scrollTop }: { scrollTop: number }) => {
         scrollTopRef.current = scrollTop;
         const scrollBottom = scrollTop + autoSizer.height;
@@ -1232,11 +1237,12 @@ const GalleryImageGrid = () => {
     }, [autoSizer.height, loadedGridHeight, previewLayout.rowHeight, loadNextBatch]);
 
     useEffect(() => {
-        const scrollTop = scrollTopRef.current;
+        const scrollTop = getCurrentGridScrollTop();
+        scrollTopRef.current = scrollTop;
         window.requestAnimationFrame(() => {
             gridRef.current?.scrollTo?.({ scrollLeft: 0, scrollTop });
         });
-    }, [multiSelectMode, selectedImages.length]);
+    }, [multiSelectMode, selectedImages.length, getCurrentGridScrollTop]);
 
     // Helper to resolve image for Info/Image render
     const resolvePreviewableImage = useCallback((image: FileDetails | undefined, info: { current: number }) => {
@@ -1446,7 +1452,6 @@ const GalleryImageGrid = () => {
                         {({ width, height }) => {
                             if (autoSizer.width !== width || autoSizer.height !== height) {
                                 setTimeout(() => setAutoSizer({ width, height }), 0);
-                                return <div style={{ width, height }} />;
                             }
                             const layout = getPreviewLayout(width, previewSize);
                             return (
