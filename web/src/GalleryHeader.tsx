@@ -42,6 +42,10 @@ const getGalleryRelativePath = (url: string) => {
 
 const getFileNameFromPath = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() || path;
 const getDateString = (value: string | string[]) => Array.isArray(value) ? value[0] : value;
+const getGalleryRoot = (relativePath?: string) => {
+    const normalized = (relativePath || './').replace(/\\/g, '/').replace(/^\.?\//, '');
+    return normalized.split('/').filter(Boolean)[0] === 'input' ? 'input' : 'output';
+};
 const isBulkMediaItem = (item: FileDetails) => (
     item.type === 'image' || item.type === 'media' || item.type === 'audio' || item.type === '3d'
 );
@@ -333,6 +337,7 @@ const GalleryHeader = () => {
     };
 
     const showSelectionActions = multiSelectMode || selectedImages.length > 0;
+    const galleryRoot = getGalleryRoot(settings.relativePath);
 
     return (
         <Flex vertical gap={8} style={{ width: '100%' }}>
@@ -360,6 +365,20 @@ const GalleryHeader = () => {
                             onClick={() => setShowFolderBar(prev => !prev)}
                             aria-label={showFolderBar ? 'Hide folder navigation' : 'Show folder navigation'}
                             style={{ width: 38 }}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Switch between generated output and imported input media." placement="bottom">
+                        <Segmented
+                            size="small"
+                            value={galleryRoot}
+                            options={[
+                                { label: 'Output', value: 'output' },
+                                { label: 'Imports', value: 'input' },
+                            ]}
+                            onChange={value => setSettings({
+                                ...settings,
+                                relativePath: value === 'input' ? 'input' : './',
+                            })}
                         />
                     </Tooltip>
                 </Flex>

@@ -21,12 +21,12 @@ Include:
 
 ## Security Model
 
-This fork is designed to browse and manage files under ComfyUI's output directory.
+This fork is designed to browse and manage files under ComfyUI's `output` and `input` media directories.
 
 Intentional restrictions:
 
 - Absolute gallery paths are rejected.
-- Paths that escape ComfyUI's output directory are rejected.
+- Paths that escape the allowed ComfyUI media directories are rejected.
 - The static gallery route does not follow symlinks.
 - File and folder operations validate paths server-side.
 

@@ -15,7 +15,7 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 - Shows parsed metadata quickly and lazy-loads raw metadata only when requested.
 - Lets you create, rename, move, delete, and download media from the gallery.
 - Supports multi-select bulk move/delete/download with compact-group confirmation.
-- Keeps gallery access scoped to ComfyUI's output directory for safer public distribution.
+- Keeps gallery access scoped to ComfyUI's `output` and `input` media folders for safer public distribution.
 
 ## Feature Highlights
 
@@ -66,13 +66,13 @@ This fork keeps the original gallery concept and focuses on making it practical 
 - Compact mode for workflows that output image/video/audio variants with related filenames.
 - Metadata search that can target prompts, model names, seeds, or the full metadata text.
 - Faster refreshes through a server-side media index and lightweight gallery payloads.
-- File-management actions with backend path validation scoped to ComfyUI's output directory.
+- File-management actions with backend path validation scoped to ComfyUI's media folders.
 
 ## Important Safety Notes
 
-The gallery can delete, rename, and move files inside the configured ComfyUI output path. Treat those actions as destructive.
+The gallery can delete, rename, and move files inside the configured ComfyUI media root. Treat those actions as destructive.
 
-This fork rejects absolute paths and paths that escape the ComfyUI output directory. The static gallery route does not follow symlinks. These restrictions are intentional for safer public distribution.
+This fork rejects absolute paths and paths that escape the allowed ComfyUI `output` or `input` directories. The static gallery route does not follow symlinks. These restrictions are intentional for safer public distribution.
 
 Do not expose a ComfyUI instance with file-management extensions to untrusted networks without access controls.
 
@@ -80,7 +80,7 @@ See [SECURITY.md](SECURITY.md) for reporting and deployment guidance.
 
 ## Performance Notes
 
-The first scan of a large output folder builds a local server-side index. Later refreshes reuse cached metadata for unchanged files, send a smaller compressed gallery list, and load full raw metadata only when a preview metadata panel requests it.
+The first scan of a large media root builds a local server-side index. Later refreshes reuse cached metadata for unchanged files, send a smaller compressed gallery list, and load full raw metadata only when a preview metadata panel requests it.
 
 Generated cache folders are local implementation details and should not be committed:
 
@@ -113,7 +113,7 @@ Recommended video flow:
 4. Search metadata and show positive prompt.
 5. Open preview, show video controls and raw metadata.
 6. Show folder actions and multi-select bulk move/delete.
-7. Close by mentioning safety scoping to ComfyUI output.
+7. Close by mentioning safety scoping to ComfyUI `output` and `input`.
 
 ## Development
 

@@ -34,6 +34,7 @@ Say:
 
 Show:
 
+- Output/Imports root switch.
 - Small/Medium/Large.
 - 20/40/60 batch selector.
 - Scroll behavior.
@@ -108,7 +109,7 @@ Show:
 
 Say:
 
-> The fork is scoped to the ComfyUI output directory and includes path hardening for safer public use.
+> The fork is scoped to ComfyUI media folders and includes path hardening for safer public use.
 
 Show:
 

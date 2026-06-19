@@ -22,6 +22,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Stored lightweight metadata in the persistent index to reduce repeat-load disk reads.
 - Video duration metadata when `ffprobe` is available.
 - Include Subfolders toggle.
+- Output/Imports root switch for generated output and imported input media.
 - Date section navigation.
 - Public documentation, security notes, contributing guide, and release checklist.
 
@@ -37,8 +38,8 @@ All notable changes in this fork are summarized here. Detailed implementation no
 
 ### Security
 
-- Gallery paths are constrained to ComfyUI's output directory.
-- Absolute paths and path traversal outside the output directory are rejected.
+- Gallery paths are constrained to ComfyUI's `output` and `input` media directories.
+- Absolute paths and path traversal outside the allowed media directories are rejected.
 - Static gallery serving does not follow symlinks.
 - File and folder operations reuse backend boundary checks.
 

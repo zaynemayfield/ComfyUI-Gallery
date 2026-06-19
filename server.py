@@ -42,6 +42,20 @@ SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_s
 THUMBNAIL_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".thumbnail_cache")
 
 
+def get_comfy_input_directory():
+    getter = getattr(folder_paths, "get_input_directory", None)
+    if callable(getter):
+        return getter()
+    return os.path.join(comfy_path, "input")
+
+
+def get_allowed_gallery_roots():
+    return {
+        "output": os.path.realpath(folder_paths.get_output_directory()),
+        "input": os.path.realpath(get_comfy_input_directory()),
+    }
+
+
 def is_path_inside(path, root):
     real_path = os.path.normcase(os.path.realpath(path))
     real_root = os.path.normcase(os.path.realpath(root))
@@ -52,7 +66,7 @@ def is_path_inside(path, root):
 
 
 def resolve_gallery_path(relative_path="./"):
-    """Resolve a user-provided gallery path under ComfyUI's output directory."""
+    """Resolve a user-provided gallery path under allowed ComfyUI media roots."""
     if relative_path is None or str(relative_path).lower() == 'null' or str(relative_path).strip() == "":
         relative_path = "./"
 
@@ -60,14 +74,19 @@ def resolve_gallery_path(relative_path="./"):
     if os.path.isabs(relative_path):
         raise ValueError("Absolute gallery paths are not allowed")
 
-    base_output_dir = os.path.realpath(folder_paths.get_output_directory())
-    if relative_path in ("./", ".", ""):
-        full_path = base_output_dir
-    else:
-        full_path = os.path.realpath(os.path.join(base_output_dir, relative_path))
+    allowed_roots = get_allowed_gallery_roots()
+    parts = [part for part in relative_path.split(os.sep) if part not in ("", ".")]
+    root_key = parts[0].lower() if parts and parts[0].lower() in allowed_roots else "output"
+    base_dir = allowed_roots[root_key]
+    root_relative_parts = parts[1:] if parts and parts[0].lower() in allowed_roots else parts
 
-    if not is_path_inside(full_path, base_output_dir):
-        raise ValueError("Gallery path must stay inside the ComfyUI output directory")
+    if relative_path in ("./", ".", "") or not root_relative_parts:
+        full_path = base_dir
+    else:
+        full_path = os.path.realpath(os.path.join(base_dir, *root_relative_parts))
+
+    if not is_path_inside(full_path, base_dir):
+        raise ValueError("Gallery path must stay inside an allowed ComfyUI media directory")
 
     return full_path, relative_path
 

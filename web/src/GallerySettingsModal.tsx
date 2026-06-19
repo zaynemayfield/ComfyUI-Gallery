@@ -69,6 +69,9 @@ const GallerySettingsModal = () => {
                     >
                         Relative Path:
                     </Typography.Title>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        Use `./` for output or `input` for imported media.
+                    </Typography.Text>
                     <Input
                         value={staged.relativePath}
                         onChange={e => setStaged({ relativePath: e.target.value })}

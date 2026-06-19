@@ -8,6 +8,7 @@ ComfyUI Gallery opens from a compact toolbar button next to other ComfyUI contro
 
 ## Browsing
 
+- Output/Imports root switch for generated media and ComfyUI imported files.
 - Responsive virtualized grid for large output folders.
 - Preview sizes: Small, Medium, Large.
 - Batch sizes: 20, 40, 60. More media loads as the user scrolls.
@@ -105,11 +106,11 @@ When Compact is on, bulk actions ask whether related compacted files should be i
 
 ## Safety Model
 
-This fork is scoped to ComfyUI's output directory:
+This fork is scoped to ComfyUI's `output` and `input` media directories:
 
 - Absolute gallery paths are rejected.
-- Paths escaping the output directory are rejected.
+- Paths escaping the allowed media directories are rejected.
 - Static gallery route does not follow symlinks.
 - File actions reuse backend path validation.
 
-The gallery can still delete, move, and rename files inside the output directory, so users should not expose ComfyUI to untrusted networks.
+The gallery can still delete, move, and rename files inside allowed media directories, so users should not expose ComfyUI to untrusted networks.

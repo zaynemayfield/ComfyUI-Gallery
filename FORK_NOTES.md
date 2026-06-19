@@ -51,6 +51,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Added scoped search across filename, metadata, positive prompt, negative prompt, model, and seed, and reorganized header sort/media/autoplay controls.
 - Added compact Off/On toggles for Compact and date dividers, matching the Autoplay control layout.
 - Added a Subfolders Off/On header toggle so selected folders can show only direct media or include descendant folder media.
+- Added an Output/Imports root switch and allowed the gallery to safely browse ComfyUI's `input` media directory as well as `output`.
 - Suppressed date section rows during active search and reset the virtual grid when date section layout changes.
 - Moved preview position count to the upper right, separated Date Sections into its own control group, and changed image cards to contain full thumbnails.
 - Restyled sort controls to match the neutral header controls instead of using the primary blue button state.
@@ -85,7 +86,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 
 ### Gallery path hardening
 
-- Restricted gallery scanning and monitoring paths to stay inside ComfyUI's output directory.
+- Restricted gallery scanning and monitoring paths to stay inside allowed ComfyUI media directories.
 - Rejected absolute gallery paths from `/Gallery/images` and `/Gallery/monitor/start`.
 - Disabled symlink following for the `/static_gallery` static route.
 - Disabled symlink following in the file monitor.
@@ -93,6 +94,6 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 
 ### Compatibility notes
 
-- Users can still scan subfolders under the ComfyUI output directory with relative paths such as `video` or `./video`.
-- Paths outside the ComfyUI output directory are now rejected. This is intentional for public distribution because the gallery serves files through ComfyUI's web server.
+- Users can still scan subfolders under allowed ComfyUI media roots with relative paths such as `video`, `./video`, or `input`.
+- Paths outside allowed ComfyUI media roots are rejected. This is intentional for public distribution because the gallery serves files through ComfyUI's web server.
 - Existing users with saved local browser settings may need to switch off "Floating Button" in the gallery settings if their browser local storage still has the previous value.

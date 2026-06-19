@@ -61,6 +61,7 @@ python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_confi
 - [ ] Bulk download zips multiple selected files.
 - [ ] Compact download asks whether to include related files.
 - [ ] Path traversal and absolute path attempts are rejected.
+- [ ] Output/Imports root switch shows generated output and imported input media.
 - [ ] Repeat refresh after first scan is noticeably faster than the first index-building scan.
 - [ ] Raw metadata still loads from the preview metadata panel.
 
@@ -68,7 +69,7 @@ python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_confi
 
 - [ ] Include the demo video.
 - [ ] Mention this is a fork of PanicTitan/ComfyUI-Gallery.
-- [ ] Highlight the safety boundary: ComfyUI output directory only.
+- [ ] Highlight the safety boundary: ComfyUI `output` and `input` media directories only.
 - [ ] Mention `ffmpeg` and `ffprobe` are recommended for video thumbnails.
 - [ ] Mention first scan builds a local index and later refreshes reuse it.
 - [ ] Ask users to file issues with ComfyUI version, browser, OS, and logs.
