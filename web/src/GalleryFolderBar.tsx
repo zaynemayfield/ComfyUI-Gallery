@@ -1,5 +1,5 @@
 import { Button, Flex, Input, Modal, Popconfirm, Tree, Tooltip, Typography, message } from 'antd';
-import { BranchesOutlined, DeleteOutlined, EditOutlined, FolderAddOutlined, FolderOpenOutlined, FolderOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
+import { BranchesOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderAddOutlined, FolderOpenOutlined, FolderOutlined, RetweetOutlined, RightOutlined, UpOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import type { CSSProperties, Key, ReactNode } from 'react';
 import { useGalleryContext } from './GalleryContext';
@@ -292,14 +292,19 @@ const GalleryFolderBar = () => {
                     rowGap: 4,
                 }}
             >
-                <Tooltip title="Folder actions" placement="bottom">
+                <Tooltip title={showActions ? 'Hide folder actions.' : 'Show folder actions.'} placement="bottom">
                     <Button
                         size="small"
                         type={showActions ? 'primary' : 'text'}
-                        icon={<FolderOutlined />}
+                        icon={
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                <FolderOutlined />
+                                {showActions ? <UpOutlined style={{ fontSize: 9 }} /> : <DownOutlined style={{ fontSize: 9 }} />}
+                            </span>
+                        }
                         onClick={() => setShowActions(prev => !prev)}
                         aria-label="Folder actions"
-                        style={{ width: 24, height: 24 }}
+                        style={{ width: 36, height: 24 }}
                     />
                 </Tooltip>
                 {rootFolders.map((folder, index) => (

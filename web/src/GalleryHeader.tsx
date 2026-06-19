@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, AutoComplete, Button, DatePicker, Modal, Segmented, Select, message, Popconfirm, Tooltip, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import { CloseOutlined, CloseSquareFilled, DeleteOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
+import { CloseOutlined, CloseSquareFilled, DeleteOutlined, DownOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined, UpOutlined } from '@ant-design/icons';
 import DownloadOutlined from '@ant-design/icons/lib/icons/DownloadOutlined';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
@@ -332,6 +332,8 @@ const GalleryHeader = () => {
         }
     };
 
+    const showSelectionActions = multiSelectMode || selectedImages.length > 0;
+
     return (
         <Flex vertical gap={8} style={{ width: '100%' }}>
             <Flex
@@ -345,173 +347,201 @@ const GalleryHeader = () => {
                     <Typography style={{ fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap' }}>
                         ComfyUI Gallery
                     </Typography>
-                    <Tooltip title={showFolderBar ? 'Hide folder navigation' : 'Show folder navigation'} placement="bottom">
+                    <Tooltip title={showFolderBar ? 'Hide folder navigation row.' : 'Show folder navigation row.'} placement="bottom">
                         <Button
                             size="small"
                             type={showFolderBar ? 'primary' : 'default'}
-                            icon={showFolderBar ? <FolderOpenOutlined /> : <FolderOutlined />}
+                            icon={
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                    {showFolderBar ? <FolderOpenOutlined /> : <FolderOutlined />}
+                                    {showFolderBar ? <UpOutlined style={{ fontSize: 9 }} /> : <DownOutlined style={{ fontSize: 9 }} />}
+                                </span>
+                            }
                             onClick={() => setShowFolderBar(prev => !prev)}
                             aria-label={showFolderBar ? 'Hide folder navigation' : 'Show folder navigation'}
+                            style={{ width: 38 }}
                         />
                     </Tooltip>
                 </Flex>
                 <Flex align="center" gap={8} wrap="wrap" style={{ flex: 1, minWidth: 320 }}>
                     <Flex align="center" gap={4}>
-                        <Select
-                            size="middle"
-                            value={searchScope}
-                            onChange={setSearchScope}
-                            style={{ width: 136 }}
-                            options={[
-                                { label: 'All', value: 'all' },
-                                { label: 'Filename', value: 'filename' },
-                                { label: 'Metadata', value: 'metadata' },
-                                { label: 'Positive Prompt', value: 'positive' },
-                                { label: 'Negative Prompt', value: 'negative' },
-                                { label: 'Model', value: 'model' },
-                                { label: 'Seed', value: 'seed' },
-                            ]}
-                        />
-                        <AutoComplete
-                            options={
-                                autoCompleteOptions && autoCompleteOptions.length > 0
-                                    ? autoCompleteOptions
-                                    : imagesAutoCompleteNames
-                            }
-                            style={{
-                                width: 240,
-                                maxWidth: '100%'
-                            }}
-                            onSearch={text => setSearch(text)}
-                            value={search}
-                            onChange={val => setSearch(val)}
-                            placeholder="Search"
-                            allowClear={{
-                                clearIcon: <CloseSquareFilled />
-                            }}
-                        />
+                        <Tooltip title="Choose where the search looks." placement="bottom">
+                            <Select
+                                size="middle"
+                                value={searchScope}
+                                onChange={setSearchScope}
+                                style={{ width: 136 }}
+                                options={[
+                                    { label: 'All', value: 'all' },
+                                    { label: 'Filename', value: 'filename' },
+                                    { label: 'Metadata', value: 'metadata' },
+                                    { label: 'Positive Prompt', value: 'positive' },
+                                    { label: 'Negative Prompt', value: 'negative' },
+                                    { label: 'Model', value: 'model' },
+                                    { label: 'Seed', value: 'seed' },
+                                ]}
+                            />
+                        </Tooltip>
+                        <Tooltip title="Search files using the selected scope." placement="bottom">
+                            <AutoComplete
+                                options={
+                                    autoCompleteOptions && autoCompleteOptions.length > 0
+                                        ? autoCompleteOptions
+                                        : imagesAutoCompleteNames
+                                }
+                                style={{
+                                    width: 240,
+                                    maxWidth: '100%'
+                                }}
+                                onSearch={text => setSearch(text)}
+                                value={search}
+                                onChange={val => setSearch(val)}
+                                placeholder="Search"
+                                allowClear={{
+                                    clearIcon: <CloseSquareFilled />
+                                }}
+                            />
+                        </Tooltip>
                     </Flex>
                     <Flex vertical gap={2}>
                         <Flex gap={4}>
-                            <Button
-                                size="small"
-                                type="default"
-                                onClick={toggleDateSort}
-                                style={{
-                                    ...sortButtonBaseStyle,
-                                    ...(sortMethod === 'Newest' || sortMethod === 'Oldest' ? sortButtonActiveStyle : {}),
-                                }}
-                            >
-                                {dateSort} {dateSort === 'Newest' ? '↓' : '↑'}
-                            </Button>
-                            <Button
-                                size="small"
-                                type="default"
-                                onClick={toggleNameSort}
-                                style={{
-                                    ...sortButtonBaseStyle,
-                                    ...(sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? sortButtonActiveStyle : {}),
-                                }}
-                            >
-                                {nameSort}
-                            </Button>
+                            <Tooltip title="Toggle newest or oldest first." placement="bottom">
+                                <Button
+                                    size="small"
+                                    type="default"
+                                    onClick={toggleDateSort}
+                                    style={{
+                                        ...sortButtonBaseStyle,
+                                        ...(sortMethod === 'Newest' || sortMethod === 'Oldest' ? sortButtonActiveStyle : {}),
+                                    }}
+                                >
+                                    {dateSort} {dateSort === 'Newest' ? '↓' : '↑'}
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Toggle filename A-Z or Z-A." placement="bottom">
+                                <Button
+                                    size="small"
+                                    type="default"
+                                    onClick={toggleNameSort}
+                                    style={{
+                                        ...sortButtonBaseStyle,
+                                        ...(sortMethod === 'Name ↑' || sortMethod === 'Name ↓' ? sortButtonActiveStyle : {}),
+                                    }}
+                                >
+                                    {nameSort}
+                                </Button>
+                            </Tooltip>
                         </Flex>
-                        <Segmented
-                            size="small"
-                            options={[
-                                { label: 'All', value: 'all' },
-                                { label: 'Images', value: 'images' },
-                                { label: 'Videos', value: 'videos' },
-                            ]}
-                            value={mediaFilter}
-                            onChange={value => setMediaFilter(value as any)}
-                        />
-                    </Flex>
-                    <Flex vertical gap={2}>
-                        <DatePicker
-                            size="small"
-                            allowClear
-                            placeholder="Start Date"
-                            onChange={(_, dateString) => setDateRange([getDateString(dateString) || null, dateRange[1]])}
-                            style={{ width: 118 }}
-                        />
-                        <DatePicker
-                            size="small"
-                            allowClear
-                            placeholder="End Date"
-                            onChange={(_, dateString) => setDateRange([dateRange[0], getDateString(dateString) || null])}
-                            style={{ width: 118 }}
-                        />
-                    </Flex>
-                    <Flex vertical gap={2}>
-                        <Segmented
-                            size="small"
-                            options={[
-                                { label: 'Small', value: 'small' },
-                                { label: 'Medium', value: 'medium' },
-                                { label: 'Large', value: 'large' },
-                            ]}
-                            value={previewSize}
-                            onChange={value => setPreviewSize(value as any)}
-                        />
-                        <Segmented
-                            size="small"
-                            options={[
-                                { label: '20', value: 20 },
-                                { label: '40', value: 40 },
-                                { label: '60', value: 60 },
-                            ]}
-                            value={mediaBatchSize}
-                            onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
-                        />
-                    </Flex>
-                    <Flex vertical gap={2}>
-                        <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
-                            <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
-                                Date Sections
-                            </Typography>
+                        <Tooltip title="Show all media, only images, or only videos." placement="bottom">
                             <Segmented
                                 size="small"
                                 options={[
-                                    { label: 'Off', value: false },
-                                    { label: 'On', value: true },
+                                    { label: 'All', value: 'all' },
+                                    { label: 'Images', value: 'images' },
+                                    { label: 'Videos', value: 'videos' },
                                 ]}
-                                value={settings.showDateDivider}
-                                onChange={value => setSettings({ ...settings, showDateDivider: Boolean(value) })}
+                                value={mediaFilter}
+                                onChange={value => setMediaFilter(value as any)}
                             />
-                        </Flex>
+                        </Tooltip>
                     </Flex>
                     <Flex vertical gap={2}>
-                        <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
-                            <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
-                                Subfolders
-                            </Typography>
+                        <Tooltip title="Only show media on or after this date." placement="bottom">
+                            <DatePicker
+                                size="small"
+                                allowClear
+                                placeholder="Start Date"
+                                onChange={(_, dateString) => setDateRange([getDateString(dateString) || null, dateRange[1]])}
+                                style={{ width: 118 }}
+                            />
+                        </Tooltip>
+                        <Tooltip title="Only show media on or before this date." placement="bottom">
+                            <DatePicker
+                                size="small"
+                                allowClear
+                                placeholder="End Date"
+                                onChange={(_, dateString) => setDateRange([dateRange[0], getDateString(dateString) || null])}
+                                style={{ width: 118 }}
+                            />
+                        </Tooltip>
+                    </Flex>
+                    <Flex vertical gap={2}>
+                        <Tooltip title="Change thumbnail size." placement="bottom">
                             <Segmented
                                 size="small"
                                 options={[
-                                    { label: 'Off', value: false },
-                                    { label: 'On', value: true },
+                                    { label: 'Small', value: 'small' },
+                                    { label: 'Medium', value: 'medium' },
+                                    { label: 'Large', value: 'large' },
                                 ]}
-                                value={includeSubfolders}
-                                onChange={value => setIncludeSubfolders(Boolean(value))}
+                                value={previewSize}
+                                onChange={value => setPreviewSize(value as any)}
                             />
-                        </Flex>
-                    </Flex>
-                    <Flex vertical gap={2}>
-                        <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
-                            <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
-                                Autoplay
-                            </Typography>
+                        </Tooltip>
+                        <Tooltip title="Choose how many media items load per scroll batch." placement="bottom">
                             <Segmented
                                 size="small"
                                 options={[
-                                    { label: 'Off', value: false },
-                                    { label: 'On', value: true },
+                                    { label: '20', value: 20 },
+                                    { label: '40', value: 40 },
+                                    { label: '60', value: 60 },
                                 ]}
-                                value={settings.autoPlayVideos}
-                                onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
+                                value={mediaBatchSize}
+                                onChange={value => setMediaBatchSize(value as 20 | 40 | 60)}
                             />
-                        </Flex>
+                        </Tooltip>
+                    </Flex>
+                    <Flex vertical gap={2}>
+                        <Tooltip title="Group media by date and show day jump buttons." placement="bottom">
+                            <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
+                                <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
+                                    Date Sections
+                                </Typography>
+                                <Segmented
+                                    size="small"
+                                    options={[
+                                        { label: 'Off', value: false },
+                                        { label: 'On', value: true },
+                                    ]}
+                                    value={settings.showDateDivider}
+                                    onChange={value => setSettings({ ...settings, showDateDivider: Boolean(value) })}
+                                />
+                            </Flex>
+                        </Tooltip>
+                        <Tooltip title="Include media inside child folders." placement="bottom">
+                            <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
+                                <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
+                                    Subfolders
+                                </Typography>
+                                <Segmented
+                                    size="small"
+                                    options={[
+                                        { label: 'Off', value: false },
+                                        { label: 'On', value: true },
+                                    ]}
+                                    value={includeSubfolders}
+                                    onChange={value => setIncludeSubfolders(Boolean(value))}
+                                />
+                            </Flex>
+                        </Tooltip>
+                    </Flex>
+                    <Flex vertical gap={2}>
+                        <Tooltip title="Autoplay visible video thumbnails." placement="bottom">
+                            <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
+                                <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
+                                    Autoplay
+                                </Typography>
+                                <Segmented
+                                    size="small"
+                                    options={[
+                                        { label: 'Off', value: false },
+                                        { label: 'On', value: true },
+                                    ]}
+                                    value={settings.autoPlayVideos}
+                                    onChange={value => setSettings({ ...settings, autoPlayVideos: Boolean(value) })}
+                                />
+                            </Flex>
+                        </Tooltip>
                         <Tooltip title="Group related outputs with the same filename, including -audio variants, into one browsable card." placement="bottom">
                             <Flex align="center" gap={6} style={{ padding: '2px 5px', border: '1px solid #f0f0f0', borderRadius: 6, background: '#fafafa' }}>
                                 <Typography style={{ fontSize: 12, fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>
@@ -590,84 +620,99 @@ const GalleryHeader = () => {
             )}
                 </Flex>
                 <Flex align="center" gap={8} style={{ marginLeft: 'auto' }}>
-                    <Button
-                        size={"middle"}
-                        icon={<SettingOutlined />}
-                        onClick={() => setShowSettings(true)}
-                    >
-                        Settings
-                    </Button>
-                    <Button
-                        danger
-                        type="primary"
-                        size="middle"
-                        icon={<CloseOutlined />}
-                        onClick={() => setOpen(false)}
-                        aria-label="Close gallery"
-                    >
-                        Close
-                    </Button>
+                    <Tooltip title="Open advanced gallery settings." placement="bottom">
+                        <Button
+                            size={"middle"}
+                            icon={<SettingOutlined />}
+                            onClick={() => setShowSettings(true)}
+                        >
+                            Settings
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Close the gallery." placement="bottom">
+                        <Button
+                            danger
+                            type="primary"
+                            size="middle"
+                            icon={<CloseOutlined />}
+                            onClick={() => setOpen(false)}
+                            aria-label="Close gallery"
+                        >
+                            Close
+                        </Button>
+                    </Tooltip>
                 </Flex>
             </Flex>
-            {(multiSelectMode || selectedImages.length > 0) && (
-                <Flex
-                    align="center"
-                    gap={8}
-                    wrap="wrap"
-                    className="selectedImagesActionButton"
-                    style={{
-                        minHeight: 36,
-                        padding: '4px 8px',
-                        borderTop: '1px solid #f0f0f0',
-                        borderBottom: '1px solid #f0f0f0',
-                        background: '#fafafa',
-                    }}
-                >
+            <Flex
+                align="center"
+                gap={8}
+                wrap="wrap"
+                className="selectedImagesActionButton"
+                style={{
+                    minHeight: 36,
+                    padding: '4px 8px',
+                    borderTop: '1px solid #f0f0f0',
+                    borderBottom: '1px solid #f0f0f0',
+                    background: '#fafafa',
+                    visibility: showSelectionActions ? 'visible' : 'hidden',
+                    pointerEvents: showSelectionActions ? 'auto' : 'none',
+                }}
+                aria-hidden={!showSelectionActions}
+            >
                     <Typography style={{ fontSize: 13, fontWeight: 600, color: '#444' }}>
                         {selectedImages.length} selected
                     </Typography>
-                    <Popconfirm
-                        title="Delete selected files"
-                        description={`Delete ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'}? This cannot be undone.`}
-                        onConfirm={bulkDeleteSelected}
-                        okText={`Delete (${selectedImages.length})`}
-                        cancelText="Cancel"
-                        okButtonProps={{ danger: true, disabled: selectedImages.length === 0 }}
-                    >
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            disabled={selectedImages.length === 0}
+                    <Tooltip title="Delete selected files." placement="bottom">
+                        <Popconfirm
+                            title="Delete selected files"
+                            description={`Delete ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'}? This cannot be undone.`}
+                            onConfirm={bulkDeleteSelected}
+                            okText={`Delete (${selectedImages.length})`}
+                            cancelText="Cancel"
+                            okButtonProps={{ danger: true, disabled: selectedImages.length === 0 }}
                         >
-                            Delete
+                            <Button
+                                danger
+                                icon={<DeleteOutlined />}
+                                disabled={selectedImages.length === 0}
+                            >
+                                Delete
+                            </Button>
+                        </Popconfirm>
+                    </Tooltip>
+                    <Tooltip title="Move selected files to a folder." placement="bottom">
+                        <Button
+                            icon={<FolderOpenOutlined />}
+                            disabled={selectedImages.length === 0}
+                            onClick={() => {
+                                setMoveTargetFolder(currentFolder);
+                                setMoveModalOpen(true);
+                            }}
+                        >
+                            Move
                         </Button>
-                    </Popconfirm>
-                    <Button
-                        icon={<FolderOpenOutlined />}
-                        disabled={selectedImages.length === 0}
-                        onClick={() => {
-                            setMoveTargetFolder(currentFolder);
-                            setMoveModalOpen(true);
-                        }}
-                    >
-                        Move
-                    </Button>
-                    <Button
-                        icon={<DownloadOutlined />}
-                        loading={bulkDownloading}
-                        disabled={selectedImages.length === 0}
-                        onClick={bulkDownloadSelected}
-                    >
-                        Download
-                    </Button>
-                    <Button onClick={selectAllVisible} disabled={selectableImages.length === 0}>
-                        Select All
-                    </Button>
-                    <Button onClick={clearMultiSelect}>
-                        Clear
-                    </Button>
-                </Flex>
-            )}
+                    </Tooltip>
+                    <Tooltip title="Download selected files as one file or a zip." placement="bottom">
+                        <Button
+                            icon={<DownloadOutlined />}
+                            loading={bulkDownloading}
+                            disabled={selectedImages.length === 0}
+                            onClick={bulkDownloadSelected}
+                        >
+                            Download
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Select all currently visible media." placement="bottom">
+                        <Button onClick={selectAllVisible} disabled={selectableImages.length === 0}>
+                            Select All
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Exit multi-select and clear selection." placement="bottom">
+                        <Button onClick={clearMultiSelect}>
+                            Clear
+                        </Button>
+                    </Tooltip>
+            </Flex>
             {showFolderBar && <GalleryFolderBar />}
             <Modal
                 open={moveModalOpen}
