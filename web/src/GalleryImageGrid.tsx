@@ -2,6 +2,7 @@ import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Card, Descriptions, Empty, Image, Input, message, Modal, Slider, Spin, Tree, Typography } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import DeleteOutlined from '@ant-design/icons/lib/icons/DeleteOutlined';
+import DownloadOutlined from '@ant-design/icons/lib/icons/DownloadOutlined';
 import EditOutlined from '@ant-design/icons/lib/icons/EditOutlined';
 import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
 import FullscreenOutlined from '@ant-design/icons/lib/icons/FullscreenOutlined';
@@ -23,6 +24,7 @@ import type { GalleryPreviewSize } from './GalleryContext';
 import { parseComfyMetadata } from './metadata-parser/metadataParser';
 import ReactJsonView from '@microlink/react-json-view';
 import { matchesGallerySearch } from './gallerySearch';
+import { downloadMediaFiles } from './downloadMedia';
 
 const GRID_GAP = 16;
 const PREVIEW_SIZE_DIMENSIONS: Record<GalleryPreviewSize, { width: number; height: number }> = {
@@ -485,6 +487,36 @@ const PreviewActions = ({
         ).then(() => setMoveOpen(false));
     };
 
+    const downloadItems = async (items: FileDetails[]) => {
+        setBusy(true);
+        try {
+            const count = await downloadMediaFiles(items, 'comfyui-gallery-preview.zip');
+            if (count > 0) message.success(`Downloaded ${count} file${count === 1 ? '' : 's'}.`);
+        } catch (error) {
+            console.error('Failed to download file:', error);
+            message.error('Failed to download file.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const confirmDownload = () => {
+        if (!isCompactGroup) {
+            downloadItems([currentImage]);
+            return;
+        }
+
+        Modal.confirm({
+            title: 'Download compacted related files?',
+            content: `This card contains ${actionItems.length} compacted files. Download all related files or only the visible file?`,
+            okText: `Download all (${actionItems.length})`,
+            cancelText: 'Visible only',
+            zIndex: BASE_Z_INDEX + 300,
+            onOk: () => downloadItems(actionItems),
+            onCancel: () => downloadItems([currentImage]),
+        });
+    };
+
     return (
         <>
             <div
@@ -514,6 +546,9 @@ const PreviewActions = ({
                 </Button>
                 <Button icon={<EditOutlined />} loading={busy} onMouseDown={event => event.stopPropagation()} onClick={() => setRenameOpen(true)} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <span style={{ cursor: 'pointer', userSelect: 'none' }}>Rename</span>
+                </Button>
+                <Button icon={<DownloadOutlined />} loading={busy} onMouseDown={event => event.stopPropagation()} onClick={confirmDownload} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none' }}>Download</span>
                 </Button>
                 <Button type={metadataVisible ? 'primary' : 'default'} icon={<InfoCircleOutlined />} onMouseDown={event => event.stopPropagation()} onClick={onToggleMetadata} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <span style={{ cursor: 'pointer', userSelect: 'none' }}>Metadata</span>

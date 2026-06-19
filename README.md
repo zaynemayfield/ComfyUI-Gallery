@@ -13,8 +13,8 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 - Groups related LTX-style outputs such as `file.mp4`, `file-audio.mp4`, and `file.png`.
 - Searches filenames and metadata, including positive prompt, negative prompt, model, and seed.
 - Shows parsed metadata quickly and lazy-loads raw metadata only when requested.
-- Lets you create, rename, move, and delete folders from the gallery.
-- Supports multi-select bulk move/delete with compact-group confirmation.
+- Lets you create, rename, move, delete, and download media from the gallery.
+- Supports multi-select bulk move/delete/download with compact-group confirmation.
 - Keeps gallery access scoped to ComfyUI's output directory for safer public distribution.
 
 ## Feature Highlights
@@ -25,7 +25,7 @@ This repository is a public-ready fork of [PanicTitan/ComfyUI-Gallery](https://g
 | Filtering | All/Images/Videos, date range, include/exclude subfolders, metadata search scopes |
 | Compact mode | Groups related media outputs and lets users cycle through grouped files |
 | Preview | Fit-to-screen media, video controls, persistent mute/volume, loop, metadata panel, raw metadata |
-| File actions | Delete, move, rename, folder create/rename/move/delete, bulk delete/move |
+| File actions | Download, delete, move, rename, folder create/rename/move/delete, bulk delete/move/download |
 | Performance | Virtualized grid, 20/40/60 loading batches, cached video thumbnails, compressed gallery responses, persistent metadata index |
 | Safety | Output-directory path boundary checks, no symlink following for static gallery route |
 
@@ -55,8 +55,8 @@ Restart ComfyUI after installation or updates.
 2. Pick a root folder or subfolder from the folder row.
 3. Search by filename or metadata using the dropdown next to Search.
 4. Use All/Images/Videos, date range, Subfolders, Compact, and preview size controls to shape the view.
-5. Click a card to preview media, inspect metadata, rename, move, or delete.
-6. Use checkboxes for multi-select bulk move/delete.
+5. Click a card to preview media, inspect metadata, download, rename, move, or delete.
+6. Use checkboxes for multi-select bulk move/delete/download.
 
 ## What This Fork Adds
 

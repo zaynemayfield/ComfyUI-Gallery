@@ -57,6 +57,9 @@ python -m py_compile server.py folder_monitor.py folder_scanner.py gallery_confi
 - [ ] Include Subfolders Off only shows direct folder media.
 - [ ] Folder create, rename, move, delete work.
 - [ ] Bulk move and bulk delete work.
+- [ ] Single download works from preview.
+- [ ] Bulk download zips multiple selected files.
+- [ ] Compact download asks whether to include related files.
 - [ ] Path traversal and absolute path attempts are rejected.
 - [ ] Repeat refresh after first scan is noticeably faster than the first index-building scan.
 - [ ] Raw metadata still loads from the preview metadata panel.

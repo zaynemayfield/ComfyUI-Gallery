@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, AutoComplete, Button, DatePicker, Modal, Segmented, Select, message, Popconfirm, Tooltip, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { CloseOutlined, CloseSquareFilled, DeleteOutlined, FolderOpenOutlined, FolderOutlined, PictureOutlined, SettingOutlined } from '@ant-design/icons';
+import DownloadOutlined from '@ant-design/icons/lib/icons/DownloadOutlined';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
 import Typography from 'antd/es/typography/Typography';
 import { ComfyAppApi } from './ComfyAppApi';
 import GalleryFolderBar from './GalleryFolderBar';
 import type { FileDetails } from './types';
+import { downloadMediaFiles } from './downloadMedia';
 
 const buildFolderTreeData = (folderKeys: string[]): DataNode[] => {
     const roots: DataNode[] = [];
@@ -91,6 +93,7 @@ const GalleryHeader = () => {
     const [moveModalOpen, setMoveModalOpen] = useState(false);
     const [moveTargetFolder, setMoveTargetFolder] = useState<string | undefined>(currentFolder);
     const [bulkMoving, setBulkMoving] = useState(false);
+    const [bulkDownloading, setBulkDownloading] = useState(false);
     const sortButtonBaseStyle = {
         minWidth: 82,
         borderColor: '#e5e5e5',
@@ -226,7 +229,7 @@ const GalleryHeader = () => {
         });
     };
 
-    const resolveSelectedUrlsForCompact = (actionLabel: 'delete' | 'move') => {
+    const resolveSelectedUrlsForCompact = (actionLabel: 'delete' | 'move' | 'download') => {
         if (!compactOutputs) return Promise.resolve(selectedImages);
 
         const relatedUrls = new Set<string>();
@@ -241,7 +244,7 @@ const GalleryHeader = () => {
 
         return new Promise<string[]>((resolve) => {
             Modal.confirm({
-                title: `${actionLabel === 'delete' ? 'Delete' : 'Move'} compacted related files?`,
+                title: `${actionLabel === 'delete' ? 'Delete' : actionLabel === 'move' ? 'Move' : 'Download'} compacted related files?`,
                 content: `Compact mode is on. ${selectedImages.length} selected file${selectedImages.length === 1 ? '' : 's'} belong to compacted groups with ${additionalCount} additional related file${additionalCount === 1 ? '' : 's'}. Include those related files too?`,
                 okText: `Include related (${expandedUrls.length})`,
                 cancelText: `Selected only (${selectedImages.length})`,
@@ -250,6 +253,25 @@ const GalleryHeader = () => {
                 onCancel: () => resolve(selectedImages),
             });
         });
+    };
+
+    const bulkDownloadSelected = async () => {
+        setBulkDownloading(true);
+        try {
+            const urlsToDownload = await resolveSelectedUrlsForCompact('download');
+            const itemsToDownload = urlsToDownload
+                .map(url => selectedItemByUrl.get(url))
+                .filter(Boolean) as FileDetails[];
+            const count = await downloadMediaFiles(itemsToDownload, 'comfyui-gallery-selected.zip');
+            if (count > 0) {
+                message.success(`Downloaded ${count} file${count === 1 ? '' : 's'}.`);
+            }
+        } catch (error) {
+            console.error('Failed to download selected files:', error);
+            message.error('Failed to download selected files.');
+        } finally {
+            setBulkDownloading(false);
+        }
     };
 
     const bulkDeleteSelected = async () => {
@@ -629,6 +651,14 @@ const GalleryHeader = () => {
                         }}
                     >
                         Move
+                    </Button>
+                    <Button
+                        icon={<DownloadOutlined />}
+                        loading={bulkDownloading}
+                        disabled={selectedImages.length === 0}
+                        onClick={bulkDownloadSelected}
+                    >
+                        Download
                     </Button>
                     <Button onClick={selectAllVisible} disabled={selectableImages.length === 0}>
                         Select All

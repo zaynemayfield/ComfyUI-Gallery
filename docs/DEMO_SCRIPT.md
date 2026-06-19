@@ -79,7 +79,7 @@ Show:
 
 Say:
 
-> The preview has fit-to-screen media, video controls, metadata, raw metadata, and file actions.
+> The preview has fit-to-screen media, video controls, metadata, raw metadata, downloads, and file actions.
 
 Show:
 
@@ -88,17 +88,19 @@ Show:
 - Raw metadata.
 - Open video preview.
 - Mute/volume/loop/fullscreen controls.
+- Download one file or a compacted zip.
 
 ### 7. Multi-Select
 
 Say:
 
-> Multi-select supports bulk move and delete. In Compact mode it asks whether related files should move or delete too.
+> Multi-select supports bulk download, move, and delete. In Compact mode it asks whether related files should be included too.
 
 Show:
 
 - Checkbox selection.
 - Select All.
+- Download selected.
 - Move modal or Delete confirmation.
 - Compact related prompt.
 

@@ -34,6 +34,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Persisted preview video mute state so the next preview starts muted when the user muted the previous one.
 - Replaced native preview video controls with a custom row for reliable click-to-pause, mute, volume, loop, and fullscreen controls.
 - Added preview overlay actions for Delete, Move, and Rename, including confirmed batch handling for compacted cards.
+- Added single and bulk media download actions. Multiple downloads are bundled into a zip, and compacted selections ask whether to include related hidden files.
 - Updated media Delete, Move, and Rename actions to patch gallery state immediately after successful backend operations instead of forcing a full metadata rescan.
 - Added explicit multi-select mode with per-card checkboxes and header-level bulk Delete and Move actions.
 - Added a Compact-mode bulk action prompt so multi-select Delete and Move can include related compacted files.

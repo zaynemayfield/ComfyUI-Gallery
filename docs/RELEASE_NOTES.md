@@ -8,8 +8,8 @@ ComfyUI Gallery 2.9.0 is a public-ready fork focused on fast media browsing, met
 - Browses large output folders with responsive preview sizes and 20/40/60 lazy loading.
 - Groups related outputs such as `example.mp4`, `example-audio.mp4`, and `example.png` into compact cards.
 - Searches filenames and metadata, including positive prompt, negative prompt, model, and seed.
-- Shows fit-to-screen previews with video mute, volume, loop, fullscreen, parsed metadata, and raw metadata.
-- Supports folder create, rename, move, delete, plus multi-select bulk move/delete.
+- Shows fit-to-screen previews with video mute, volume, loop, fullscreen, parsed metadata, raw metadata, and downloads.
+- Supports folder create, rename, move, delete, plus multi-select bulk download/move/delete.
 - Speeds up refreshes with a persistent server-side media index, compressed gallery responses, lazy raw metadata loading, and cached video thumbnails.
 - Keeps gallery access scoped to the ComfyUI output directory with backend path validation.
 
@@ -44,4 +44,3 @@ Show these workflows in the public demo:
 This extension can delete, move, and rename files inside the ComfyUI output directory. Do not expose ComfyUI with file-management extensions to untrusted networks without access controls.
 
 Absolute paths and paths outside the ComfyUI output directory are rejected. The static gallery route does not follow symlinks.
-

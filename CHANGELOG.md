@@ -13,6 +13,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Compact output grouping for related image/video/audio-variant outputs.
 - Bulk action prompt for compacted related files.
 - Preview overlay actions for delete, move, rename, metadata, and raw metadata.
+- Preview and multi-select download actions, including zip downloads for multiple selected files.
 - Persistent video volume, mute, and loop controls.
 - Lazy cached video thumbnails.
 - Persistent server-side media index for faster refreshes and repeat browsing from other clients.

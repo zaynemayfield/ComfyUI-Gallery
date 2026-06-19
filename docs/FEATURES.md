@@ -62,6 +62,7 @@ Preview supports:
 - Fullscreen.
 - Metadata panel.
 - Raw metadata view.
+- Single-file download, or zip download for compacted groups.
 - Delete, Move, Rename actions.
 
 Raw metadata is loaded on demand when the metadata panel opens, so the main gallery list stays lightweight during refreshes.
@@ -85,6 +86,7 @@ Bulk actions:
 
 - Delete selected.
 - Move selected.
+- Download selected as a single file or zip.
 - Select all visible.
 - Clear selection.
 
