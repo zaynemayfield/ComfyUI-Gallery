@@ -1118,6 +1118,7 @@ const GalleryImageGrid = () => {
                     cardHeight={previewLayout.cardHeight}
                     onVideoClick={(selectedImage) => setPreviewingVideo(selectedImage?.name)}
                     onPreviewOpen={(selectedImage, group) => {
+                        setImageInfoName(selectedImage.url);
                         setPreviewActionGroup(group.length > 1 ? group : [selectedImage]);
                     }}
                 />
@@ -1247,7 +1248,7 @@ const GalleryImageGrid = () => {
         // If still not found, return undefined
         if (!resolved) return undefined;
 
-        setImageInfoName(resolved!.name);
+        setImageInfoName(resolved!.url);
 
         return resolved;
     }, [previewableImages, setImageInfoName]);
@@ -1338,7 +1339,7 @@ const GalleryImageGrid = () => {
 
     // Memoized onChange for InfoView
     const infoOnChange = useCallback((current: number, prevCurrent: number) => {
-        setImageInfoName(previewableImages[current]?.name);
+        setImageInfoName(previewableImages[current]?.url);
     }, [setImageInfoName, previewableImages]);
 
     // Memoized afterOpenChange for InfoView
@@ -1353,14 +1354,16 @@ const GalleryImageGrid = () => {
         const t = previewableImages[current]?.type;
         if (t == "media" || t == "audio" || t == "3d") {
             setPreviewingVideo(previewableImages[current]?.name);
+            setImageInfoName(previewableImages[current]?.url);
         } else {
             setPreviewingVideo(undefined);
+            setImageInfoName(previewableImages[current]?.url);
         }
-    }, [setPreviewingVideo, previewableImages]);
+    }, [setImageInfoName, setPreviewingVideo, previewableImages]);
 
     // Memoized current index for InfoView
     const previewableCurrentIndex = useMemo(() => {
-        let index = previewableImages.findIndex(img => img.name === imageInfoName);
+        let index = previewableImages.findIndex(img => img.url === imageInfoName);
         if (index < 0) {
             return undefined;
         } else {

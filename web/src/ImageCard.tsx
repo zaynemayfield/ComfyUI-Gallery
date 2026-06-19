@@ -92,7 +92,7 @@ function ImageCard({
     cardWidth?: number;
     cardHeight?: number;
 }) {
-    const { settings, selectedImages, setSelectedImages, multiSelectMode, setMultiSelectMode, setPreviewingVideo } = useGalleryContext();
+    const { settings, selectedImages, setSelectedImages, multiSelectMode, setMultiSelectMode, setPreviewingVideo, setImageInfoName } = useGalleryContext();
     const dragRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [dragging, setDragging] = useState(false);
@@ -421,6 +421,7 @@ function ImageCard({
                         }
                         // Ensure any leftover media preview state is cleared so this opens as an image
                         try { setPreviewingVideo(undefined); } catch { }
+                        setImageInfoName(currentImage.url);
                         onPreviewOpen?.(currentImage, compactItems);
                         // Trigger the preview
                         document.getElementById(currentImage.url)?.click();
@@ -440,6 +441,7 @@ function ImageCard({
                             return;
                         }
                         try { setPreviewingVideo(undefined); } catch { }
+                        setImageInfoName(currentImage.url);
                         onPreviewOpen?.(currentImage, compactItems);
                         document.getElementById(currentImage.url)?.click();
                     }}
@@ -466,6 +468,7 @@ function ImageCard({
                         return;
                     }
                     try { setPreviewingVideo(undefined); } catch { }
+                    setImageInfoName(currentImage.url);
                     onPreviewOpen?.(currentImage, compactItems);
                     document.getElementById(currentImage.url)?.click();
                 }} />
@@ -493,6 +496,7 @@ function ImageCard({
                                 toggleSelected();
                                 return;
                             }
+                            setImageInfoName(currentImage.url);
                             onPreviewOpen?.(currentImage, compactItems);
                             onVideoClick(currentImage);
                             document.getElementById(currentImage.url)?.click();
@@ -510,6 +514,7 @@ function ImageCard({
                                 toggleSelected();
                                 return;
                             }
+                            setImageInfoName(currentImage.url);
                             onPreviewOpen?.(currentImage, compactItems);
                             onVideoClick(currentImage);
                             document.getElementById(currentImage.url)?.click();
@@ -543,6 +548,7 @@ function ImageCard({
                                 toggleSelected();
                                 return;
                             }
+                            setImageInfoName(currentImage.url);
                             onPreviewOpen?.(currentImage, compactItems);
                             onVideoClick(currentImage);
                             document.getElementById(currentImage.url)?.click();
