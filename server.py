@@ -17,27 +17,27 @@ import subprocess
 
 from .folder_monitor import FileSystemMonitor
 from .folder_scanner import _scan_for_images, DEFAULT_EXTENSIONS, get_video_duration
-from .gallery_config import disable_logs, gallery_log
+from .gallery_config import gallery_log
 from .metadata_extractor import buildMetadata, get_size
 
-# Add ComfyUI root to sys.path HERE
 import sys
 comfy_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(comfy_path)
 
 monitor = None
-# Placeholder directory.  This *must* exist, even if it's empty.
-PLACEHOLDER_DIR = os.path.join(comfy_path, "output")  # os.path.abspath("./placeholder_static")
+PLACEHOLDER_DIR = os.path.join(comfy_path, "output")
 if not os.path.exists(PLACEHOLDER_DIR):
     os.makedirs(PLACEHOLDER_DIR)
 
-# Add a *placeholder* static route.  This gets modified later.
-PromptServer.instance.routes.static('/static_gallery', PLACEHOLDER_DIR, follow_symlinks=False, name='static_gallery_placeholder') #give a name to the route
+PromptServer.instance.routes.static(
+    '/static_gallery',
+    PLACEHOLDER_DIR,
+    follow_symlinks=False,
+    name='static_gallery_placeholder'
+)
 
-# Initialize scan_lock here
 PromptServer.instance.scan_lock = threading.Lock()
 
-# Settings file for persistent user settings
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_settings.json")
 THUMBNAIL_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".thumbnail_cache")
 
@@ -57,6 +57,7 @@ def get_allowed_gallery_roots():
 
 
 def is_path_inside(path, root):
+    """Return True only when the resolved path stays under the resolved root."""
     real_path = os.path.normcase(os.path.realpath(path))
     real_root = os.path.normcase(os.path.realpath(root))
     try:
@@ -99,6 +100,7 @@ def get_static_gallery_dir():
 
 
 def resolve_static_relative_path(relative_path="", allow_root=False):
+    """Resolve folder or relative file paths against the currently served gallery root."""
     static_dir = get_static_gallery_dir()
     if relative_path is None:
         relative_path = ""
@@ -143,6 +145,7 @@ def validate_file_name(name):
 
 
 def resolve_static_file_path(image_url):
+    """Resolve a /static_gallery URL to a file under the active gallery root."""
     if not image_url:
         raise ValueError("image_path is required")
     if not str(image_url).startswith("/static_gallery/"):
@@ -463,8 +466,8 @@ async def stop_gallery_monitor(request):
     return web.Response(text="Gallery monitor stopped", content_type="text/plain")
 
 @PromptServer.instance.routes.patch("/Gallery/updateImages")
-async def newSettings(request):
-    # This route is no longer used
+async def deprecated_update_images(request):
+    """Deprecated compatibility endpoint retained for older frontend builds."""
     return web.Response(status=200)
 
 @PromptServer.instance.routes.post("/Gallery/folder/create")
@@ -616,54 +619,42 @@ async def rename_image(request):
 
 @PromptServer.instance.routes.post("/Gallery/move")
 async def move_image(request):
-    """Endpoint to move an image to a new location, relative to the current gallery root (current_path)."""
-    from .gallery_config import disable_logs, gallery_log
+    """Move a media file within the active gallery root without creating new folders."""
+    from .gallery_config import gallery_log
     try:
         data = await request.json()
         source_path = data.get("source_path")
         target_path = data.get("target_path")
-        current_path = data.get("current_path") or data.get("relative_path") or "./"
-        gallery_log(f"source_path: {source_path}")
-        gallery_log(f"target_path: {target_path}")
-        gallery_log(f"current_path: {current_path}")
         if not source_path or not target_path:
             return web.Response(status=400, text="source_path and target_path are required")
-        static_route = next((r for r in PromptServer.instance.app.router.routes() if getattr(r, 'name', None) == 'static_gallery_placeholder'), None)
-        if static_route is not None:
-            static_dir = str(static_route.resource._directory)
+
+        if str(source_path).startswith("/static_gallery/"):
+            full_source_path, static_dir = resolve_static_file_path(source_path)
         else:
-            static_dir = folder_paths.get_output_directory()
-        static_dir_basename = os.path.basename(os.path.normpath(static_dir))
-        def make_path(p):
-            if os.path.isabs(p):
-                return os.path.normpath(p)
-            if p.startswith(static_dir_basename + os.sep):
-                p = p[len(static_dir_basename + os.sep):]
-            elif p.startswith(static_dir_basename + "/"):
-                p = p[len(static_dir_basename + "/") :]
-            return os.path.normpath(os.path.join(static_dir, p))
-        full_source_path = make_path(source_path)
-        full_target_path = make_path(target_path)
-        gallery_log(f"static_dir: {static_dir}")
-        gallery_log(f"full_source_path: {full_source_path}")
-        gallery_log(f"full_target_path: {full_target_path}")
-        if not os.path.exists(full_source_path):
+            full_source_path, static_dir = resolve_static_relative_path(source_path)
+
+        full_target_path, _ = resolve_static_relative_path(target_path)
+        if not os.path.isfile(full_source_path):
             return web.Response(status=404, text=f"Source file not found: {full_source_path}")
-        
-        if not is_path_inside(full_source_path, static_dir) or \
-            not is_path_inside(full_target_path, static_dir) or \
-            not is_path_inside(full_source_path, comfy_path) or \
-            not is_path_inside(full_target_path, comfy_path):
-            return web.Response(status=403, text="Access denied: File outside of allowed directory")
+
         if os.path.isdir(full_target_path):
             full_target_path = os.path.join(full_target_path, os.path.basename(full_source_path))
+
+        validate_file_name(os.path.basename(full_target_path))
         target_dir = os.path.dirname(full_target_path)
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir, exist_ok=True)
+        if not is_path_inside(full_target_path, static_dir):
+            return web.Response(status=403, text="Access denied: File outside of allowed directory")
+        if not os.path.isdir(target_dir):
+            return web.Response(status=404, text="Target folder not found")
+        if os.path.exists(full_target_path):
+            return web.Response(status=409, text="Target file already exists")
+
         shutil.move(full_source_path, full_target_path)
         return web.Response(text=f"Image moved from {source_path} to {target_path}")
+    except ValueError as e:
+        return web.Response(status=400, text=str(e))
+    except PermissionError as e:
+        return web.Response(status=403, text=str(e))
     except Exception as e:
         gallery_log(f"Error moving image: {e}")
-        import traceback
-        traceback.print_exc()
         return web.Response(status=500, text=str(e))

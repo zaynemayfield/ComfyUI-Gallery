@@ -9,7 +9,7 @@ import GallerySettingsModal from './GallerySettingsModal';
 import { BASE_Z_INDEX } from './ComfyAppApi';
 
 const GalleryModal = () => {
-    const { open, setOpen, size, showSettings, siderCollapsed, setSiderCollapsed } = useGalleryContext();
+    const { open, setOpen, size, showSettings, siderCollapsed } = useGalleryContext();
 
     return (
         <>

@@ -6,7 +6,7 @@ import { useLocalStorageState, useDebounceFn } from 'ahooks';
 import { useRef, useEffect } from 'react';
 
 const GalleryOpenButton = () => {
-    const { open, setOpen, settings } = useGalleryContext();
+    const { setOpen, settings } = useGalleryContext();
     const [position, setPosition] = useLocalStorageState<{ x: number; y: number }>('gallery-floating-btn-pos', {
         defaultValue: { x: 32, y: 32 },
     });
@@ -31,15 +31,12 @@ const GalleryOpenButton = () => {
         }
         if (x < 0) { x = 8; changed = true; }
         if (y < 0) { y = 8; changed = true; }
-        // Only update if the new position is different
         if (changed && (x !== position.x || y !== position.y)) {
             setPosition({ x, y });
             savePosition({ x, y });
         }
     }, [position?.x, position?.y, setPosition, savePosition]);
 
-    // Remove useSize and only use window.innerWidth/innerHeight for clamping and resize
-    // Move button into view on window resize (even if page is empty)
     useEffect(() => {
         function handleResize() {
             if (!btnRef.current || !position) return;
@@ -66,7 +63,6 @@ const GalleryOpenButton = () => {
             }
         }
         window.addEventListener('resize', handleResize);
-        // Initial check in case the page is empty
         handleResize();
         return () => window.removeEventListener('resize', handleResize);
     }, [position, setPosition, savePosition]);
@@ -86,7 +82,6 @@ const GalleryOpenButton = () => {
     };
 
     if (settings.floatingButton) {
-        // Floating, movable button
         return (
             <div
                 ref={btnRef}
@@ -108,7 +103,6 @@ const GalleryOpenButton = () => {
                         const dy = moveEvent.clientY - startY;
                         let newX = origX + dx;
                         let newY = origY + dy;
-                        // Clamp to viewport using window.innerWidth/innerHeight
                         const btnRect = btnRef.current?.getBoundingClientRect();
                         const btnWidth = btnRect?.width || 160;
                         const btnHeight = btnRect?.height || 48;

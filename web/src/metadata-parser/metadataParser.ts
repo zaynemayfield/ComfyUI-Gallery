@@ -1,7 +1,7 @@
 // Utility to parse and format metadata for the Gallery preview
 import { isPlainPromptString } from './heuristicMetadataParser';
 import { extractByPrompt } from './promptMetadataParser';
-import type { FileDetails, Metadata } from '../types';
+import type { Metadata } from '../types';
 import { isNegativePrompt, isPositivePrompt } from './validator';
 import { extractByWorkflow } from './workflowMetadataParser';
 

@@ -107,14 +107,14 @@ class GalleryEventHandler(PatternMatchingEventHandler):
                     gallery_log("FileSystemMonitor: Changes detected after debounce, sending updates")
                     from .server import sanitize_json_data
                     # Correctly schedule the send_sync call on the main thread.
-                    PromptServer.instance.send_sync("Gallery.file_change", sanitize_json_data(changes)) # NO ASYNCIO NEEDED
+                    PromptServer.instance.send_sync("Gallery.file_change", sanitize_json_data(changes))
                 else:
                     gallery_log("FileSystemMonitor: Changes detected by watchdog, but no relevant gallery changes after debounce.")
 
                 self.last_known_folders = new_folders_data  # Update last_known_folders.
                 self.debounce_timer = None
             except queue.Empty:
-                gallery_log("FileSystemMonitor: Queue is empty, this shouldn't happen normally.")
+                gallery_log("FileSystemMonitor: scan queue was empty before completion handling.")
 
             finally:
                 self.running_scan = False #Clear flag in all cases

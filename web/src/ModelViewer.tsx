@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, useGLTF, useFBX, Html, Center, Bounds, useBounds } from '@react-three/drei';
 import { useLoader, useThree } from '@react-three/fiber';

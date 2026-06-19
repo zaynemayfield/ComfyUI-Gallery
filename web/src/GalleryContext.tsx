@@ -81,8 +81,6 @@ export interface GalleryContextType {
     setShowDateDivider: Dispatch<SetStateAction<boolean>>;
     showSettings: boolean;
     setShowSettings: Dispatch<SetStateAction<boolean>>;
-    showRawMetadata: boolean;
-    setShowRawMetadata: Dispatch<SetStateAction<boolean>>;
     sortMethod: 'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓';
     setSortMethod: Dispatch<SetStateAction<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>>;
     mediaFilter: GalleryMediaFilter;
@@ -137,7 +135,6 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [searchScope, setSearchScope] = useState<GallerySearchScope>('all');
     const [showDateDivider, setShowDateDivider] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
-    const [showRawMetadata, setShowRawMetadata] = useState(false);
     const [sortMethod, setSortMethod] = useState<'Newest' | 'Oldest' | 'Name ↑' | 'Name ↓'>("Newest");
     const [mediaFilter, setMediaFilter] = useState<GalleryMediaFilter>('all');
     const [dateRange, setDateRange] = useState<GalleryDateRange>([null, null]);
@@ -153,7 +150,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     const [siderCollapsed, setSiderCollapsed] = useState(true);
     const size = useSize(document.querySelector('body'));
     const imagesBoxSize = useSize(document.querySelector('#imagesBox'));
-    const { data, error, loading, runAsync, mutate, refresh, refreshAsync } = useRequest(getImages, { manual: true });
+    const { data, error, loading, runAsync, mutate } = useRequest(getImages, { manual: true });
     const [gridSize, setGridSize] = useState({ width: 1000, height: 600, columnCount: 1, rowCount: 1 });
     const [autoSizer, setAutoSizer] = useState({ width: 1000, height: 600 });
     const [autoCompleteOptions, setAutoCompleteOptions] = useState<NonNullable<AutoCompleteProps['options']>>([]);
@@ -191,16 +188,14 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         }
 
         ComfyAppApi.onFileChange((event) => {
-            console.log("file_change:", event.detail);
             updateImages(event.detail);
         });
 
         ComfyAppApi.onUpdate((event) => {
-            console.log("update:", event.detail);
-            updateImages(event.detail); // Pass the whole object, not event.detail.folders
+            updateImages(event.detail);
         });
 
-        ComfyAppApi.onClear((event) => {
+        ComfyAppApi.onClear(() => {
             mutate({ folders: {} });
         });
     }, []);
@@ -408,7 +403,6 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         searchScope, setSearchScope,
         showDateDivider, setShowDateDivider,
         showSettings, setShowSettings,
-        showRawMetadata, setShowRawMetadata,
         sortMethod, setSortMethod,
         mediaFilter, setMediaFilter,
         dateRange, setDateRange,
@@ -442,7 +436,6 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         searchScope,
         showDateDivider,
         showSettings,
-        showRawMetadata,
         sortMethod,
         mediaFilter,
         dateRange,

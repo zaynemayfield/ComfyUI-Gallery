@@ -22,9 +22,7 @@ function getComfyApp() {
 
 const mockApi = {
     api: {
-        fetchApi: async (url: string, options?: any) => {
-            console.log('[MockAPI] fetchApi called:', url, options);
-            // Mocked API responses for development
+        fetchApi: async (url: string, _options?: any) => {
             if (url.startsWith("/Gallery/images")) {
                 return fetch("/api.json", {});;
             }
@@ -36,29 +34,23 @@ const mockApi = {
             }
             return { ok: true, text: async () => "{}" };
         },
-        addEventListener: (event: string, cb: GalleryEventCallback) => {
-            console.log(`[MockAPI] addEventListener called for event: ${event}`);
-            // No-op in mock
+        addEventListener: (_event: string, _cb: GalleryEventCallback) => {
         },
         moveImage: async (sourcePath: string, targetPath: string) => {
-            console.log(`[MockAPI] moveImage called: ${sourcePath} -> ${targetPath}`);
-            // Simulate success
+            void sourcePath;
+            void targetPath;
             return true;
         },
         deleteImage: async (imagePath: string) => {
-            console.log(`[MockAPI] deleteImage called: ${imagePath}`);
-            // Simulate success
+            void imagePath;
             return true;
         },
     },
     registerExtension: (ext: any) => {
-        console.log('[MockAPI] registerExtension called:', ext);
         try {
             ext?.init();
             ext?.nodeCreated();
-        } catch (error) {
-            
-        }
+        } catch {}
     }
 };
 
@@ -95,17 +87,12 @@ export const ComfyAppApi = {
         app.registerExtension(ext),
     moveImage: async (sourcePath: string, targetPath: string) => {
         try { 
-            console.log("moving image");
-            console.log("sourcePath:", sourcePath);
-            console.log("targetPath:", targetPath);
-
             const response = await app.api.fetchApi("/Gallery/move", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ source_path: sourcePath, target_path: targetPath })
             });
             if (response.ok) {
-                console.log(`Image moved from ${sourcePath} to ${targetPath}`);
                 return true;
             } else {
                 const errorText = await response.text();
@@ -126,7 +113,6 @@ export const ComfyAppApi = {
                 body: JSON.stringify({ image_path: imagePath })
             });
             if (response.ok) {
-                console.log(`Image deleted: ${imagePath}`);
                 return true;
             } else {
                 const errorText = await response.text();
@@ -146,7 +132,6 @@ export const ComfyAppApi = {
                 body: JSON.stringify({ image_path: imagePath, new_name: newName })
             });
             if (response.ok) {
-                console.log(`Image renamed: ${imagePath} -> ${newName}`);
                 return true;
             } else {
                 const errorText = await response.text();

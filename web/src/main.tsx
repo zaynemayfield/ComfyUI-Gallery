@@ -105,21 +105,14 @@ ComfyAppApi.registerExtension({
                 if (raw) settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
             } catch { }
 
-            // Define the priority list of selectors to look for
             const potentialSelectors = [
                 settings.buttonBoxQuery,
                 "#pv_id_28_content > div > div",
                 DEFAULT_SETTINGS.buttonBoxQuery,
                 "div.workflow-tabs-container div div.workflow-tabs-container", // Newer ComfyUI
-            ].filter((s): s is string => !!s && s.trim().length > 0); // Remove empty/null strings
+            ].filter((s): s is string => !!s && s.trim().length > 0);
 
-            console.log("Gallery: Waiting for UI to load...");
-
-            // Wait until one of the selectors exists in the DOM
             const targetElement = await waitForElement(potentialSelectors);
-
-            console.log("Gallery: UI target found:", targetElement);
-
             if (!targetElement) {
                 console.error('Gallery: Could not find element to inject the button.');
                 return;
@@ -160,7 +153,7 @@ ComfyAppApi.registerExtension({
 });
 
 function Main() {
-    const [settingsState, setSettings] = useLocalStorageState<SettingsState>(STORAGE_KEY, {
+    const [settingsState] = useLocalStorageState<SettingsState>(STORAGE_KEY, {
         defaultValue: DEFAULT_SETTINGS,
         listenStorageChange: true,
     });

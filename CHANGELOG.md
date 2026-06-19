@@ -37,6 +37,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Repeat gallery refreshes use a lightweight persistent index and compressed responses.
 - Multi-select controls no longer reserve header space while inactive, while preserving grid scroll position when selection mode changes.
 - The media grid stays mounted while header controls resize so selecting or clearing media does not jump back to the top.
+- Removed obsolete metadata overlay code, stale comments, unused frontend state/props, and normal-operation debug logging.
 
 ### Security
 
@@ -44,6 +45,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Absolute paths and path traversal outside the allowed media directories are rejected.
 - Static gallery serving does not follow symlinks.
 - File and folder operations reuse backend boundary checks.
+- Media moves now use shared gallery-root path resolution, require existing destination folders, and refuse to overwrite existing files.
 
 ## Upstream History
 

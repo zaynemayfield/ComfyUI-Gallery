@@ -62,6 +62,8 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Compressed gallery JSON responses and removed duplicate startup fetches so refreshes do less network and scan work.
 - Removed full raw workflow metadata from the main gallery list payload and load full metadata only when the preview metadata panel opens.
 - Shrank the persistent gallery index so it stores lightweight list metadata instead of every raw workflow blob.
+- Removed obsolete metadata overlay code, stale comments, unused frontend state/props, and normal-operation debug logging.
+- Hardened media move handling to use shared gallery-root path resolution, reject invalid paths consistently, require existing destination folders, and avoid overwriting existing files.
 - Constrained the gallery modal to the viewport so the page does not show a second far-right vertical scrollbar.
 - Reworked the README for public fork distribution, including current usage, security notes, installation, development notes, and upstream credits.
 - Updated project metadata to point at this fork while preserving an upstream project link.

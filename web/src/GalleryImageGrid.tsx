@@ -782,7 +782,6 @@ const GalleryImageGrid = () => {
         sortMethod,
         mediaFilter,
         dateRange,
-        gridSize,
         setGridSize,
         autoSizer,
         setAutoSizer,
@@ -790,8 +789,6 @@ const GalleryImageGrid = () => {
         setImageInfoName,
         previewingVideo,
         setPreviewingVideo,
-        showRawMetadata,
-        setShowRawMetadata,
         settings,
         loading,
         mutate,
@@ -1116,7 +1113,6 @@ const GalleryImageGrid = () => {
                         dragFolder: image.sourceFolder || currentFolder
                     }}
                     key={image.name}
-                    index={index}
                     cardWidth={previewLayout.cardWidth}
                     cardHeight={previewLayout.cardHeight}
                     onVideoClick={(selectedImage) => setPreviewingVideo(selectedImage?.name)}
@@ -1244,32 +1240,6 @@ const GalleryImageGrid = () => {
         });
     }, [multiSelectMode, selectedImages.length, getCurrentGridScrollTop]);
 
-    // Helper to resolve image for Info/Image render
-    const resolvePreviewableImage = useCallback((image: FileDetails | undefined, info: { current: number }) => {
-        if (image) return image;
-        let resolved: FileDetails | undefined;
-        // Try forward
-        for (let index = info.current; index < previewableImages.length; index++) {
-            let current = previewableImages[index];
-            resolved = current;
-            break;
-        }
-        // Try backward
-        if (!resolved) {
-            for (let index = info.current; index > 0 && index > previewableImages.length; index--) {
-                let current = previewableImages[index];
-                resolved = current;
-                break;
-            }
-        }
-        // If still not found, return undefined
-        if (!resolved) return undefined;
-
-        setImageInfoName(resolved!.url);
-
-        return resolved;
-    }, [previewableImages, setImageInfoName]);
-
     const stopPropagation = useCallback((e: React.SyntheticEvent) => {
         e.stopPropagation();
         e.nativeEvent.stopPropagation();
@@ -1354,20 +1324,15 @@ const GalleryImageGrid = () => {
         stopPropagation
     ]);
 
-    // Memoized onChange for InfoView
-    const infoOnChange = useCallback((current: number, prevCurrent: number) => {
+    const infoOnChange = useCallback((current: number) => {
         setImageInfoName(previewableImages[current]?.url);
     }, [setImageInfoName, previewableImages]);
 
-    // Memoized afterOpenChange for InfoView
     const infoAfterOpenChange = useCallback((open: boolean) => {
         if (!open) setImageInfoName(undefined);
     }, [setImageInfoName]);
 
-
-
-    // Memoized onChange for video preview
-    const videoOnChange = useCallback((current: number, prevCurrent: number) => {
+    const videoOnChange = useCallback((current: number) => {
         const t = previewableImages[current]?.type;
         if (t == "media" || t == "audio" || t == "3d") {
             setPreviewingVideo(previewableImages[current]?.name);

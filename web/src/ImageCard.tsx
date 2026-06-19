@@ -79,14 +79,12 @@ export type ImageCardDimensions = {
 
 function ImageCard({
     image,
-    index,
     onVideoClick,
     onPreviewOpen,
     cardWidth = ImageCardWidth,
     cardHeight = ImageCardHeight,
 }: {
     image: FileDetails & { dragFolder?: string; compactCount?: number; compactItems?: FileDetails[] };
-    index: number;
     onVideoClick: (image: FileDetails | undefined) => void;
     onPreviewOpen?: (image: FileDetails, group: FileDetails[]) => void;
     cardWidth?: number;
@@ -212,8 +210,6 @@ function ImageCard({
 
         event.dataTransfer.setData('text/uri-list', `${BASE_PATH}${currentImage.url}`);
         event.dataTransfer.setData('DownloadURL', `${mimeType}:${currentImage.name}:${window.location.origin + BASE_PATH + currentImage.url}`);
-        // Optionally, set a drag image
-        // event.dataTransfer.setDragImage(event.currentTarget, 10, 10);
     };
 
     return (<>
