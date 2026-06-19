@@ -35,7 +35,7 @@ This fork tracks user-facing and security-focused changes made on top of the ups
 - Replaced native preview video controls with a custom row for reliable click-to-pause, mute, volume, loop, and fullscreen controls.
 - Added preview overlay actions for Delete, Move, and Rename, including confirmed batch handling for compacted cards.
 - Added single and bulk media download actions. Multiple downloads are bundled into a zip, and compacted selections ask whether to include related hidden files.
-- Stabilized the multi-select action row so entering or exiting selection mode does not shift the grid scroll position, stacked Date Sections with Subfolders, and added concise header tooltips plus chevrons on folder toggles.
+- Stabilized the multi-select action row so entering or exiting selection mode does not shift the grid scroll position without reserving inactive header space, stacked Date Sections with Subfolders, and added concise header tooltips plus chevrons on folder toggles.
 - Changed preview selection tracking from filename to media URL so moved files, duplicate names, and compacted cards open the intended preview instead of falling back to the first item.
 - Updated media Delete, Move, and Rename actions to patch gallery state immediately after successful backend operations instead of forcing a full metadata rescan.
 - Added explicit multi-select mode with per-card checkboxes and header-level bulk Delete and Move actions.

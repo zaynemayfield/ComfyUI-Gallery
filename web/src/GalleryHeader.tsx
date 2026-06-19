@@ -662,22 +662,20 @@ const GalleryHeader = () => {
                     </Tooltip>
                 </Flex>
             </Flex>
-            <Flex
-                align="center"
-                gap={8}
-                wrap="wrap"
-                className="selectedImagesActionButton"
-                style={{
-                    minHeight: 36,
-                    padding: '4px 8px',
-                    borderTop: '1px solid #f0f0f0',
-                    borderBottom: '1px solid #f0f0f0',
-                    background: '#fafafa',
-                    visibility: showSelectionActions ? 'visible' : 'hidden',
-                    pointerEvents: showSelectionActions ? 'auto' : 'none',
-                }}
-                aria-hidden={!showSelectionActions}
-            >
+            {showSelectionActions && (
+                <Flex
+                    align="center"
+                    gap={8}
+                    wrap="wrap"
+                    className="selectedImagesActionButton"
+                    style={{
+                        minHeight: 36,
+                        padding: '4px 8px',
+                        borderTop: '1px solid #f0f0f0',
+                        borderBottom: '1px solid #f0f0f0',
+                        background: '#fafafa',
+                    }}
+                >
                     <Typography style={{ fontSize: 13, fontWeight: 600, color: '#444' }}>
                         {selectedImages.length} selected
                     </Typography>
@@ -731,7 +729,8 @@ const GalleryHeader = () => {
                             Clear
                         </Button>
                     </Tooltip>
-            </Flex>
+                </Flex>
+            )}
             {showFolderBar && <GalleryFolderBar />}
             <Modal
                 open={moveModalOpen}

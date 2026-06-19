@@ -798,10 +798,13 @@ const GalleryImageGrid = () => {
         previewSize,
         mediaBatchSize,
         compactOutputs,
-        includeSubfolders
+        includeSubfolders,
+        selectedImages,
+        multiSelectMode
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<any>(null);
+    const scrollTopRef = useRef(0);
     const [visibleMediaLimit, setVisibleMediaLimit] = useState<number>(mediaBatchSize);
     const [pendingScrollTarget, setPendingScrollTarget] = useState<DateDividerRow | null>(null);
     const [previewActionGroup, setPreviewActionGroup] = useState<FileDetails[] | undefined>(undefined);
@@ -1221,11 +1224,19 @@ const GalleryImageGrid = () => {
     }, [imagesDetailsList, mediaBatchSize]);
 
     const handleGridScroll = useCallback(({ scrollTop }: { scrollTop: number }) => {
+        scrollTopRef.current = scrollTop;
         const scrollBottom = scrollTop + autoSizer.height;
         if (loadedGridHeight - scrollBottom <= previewLayout.rowHeight * 2) {
             loadNextBatch();
         }
     }, [autoSizer.height, loadedGridHeight, previewLayout.rowHeight, loadNextBatch]);
+
+    useEffect(() => {
+        const scrollTop = scrollTopRef.current;
+        window.requestAnimationFrame(() => {
+            gridRef.current?.scrollTo?.({ scrollLeft: 0, scrollTop });
+        });
+    }, [multiSelectMode, selectedImages.length]);
 
     // Helper to resolve image for Info/Image render
     const resolvePreviewableImage = useCallback((image: FileDetails | undefined, info: { current: number }) => {

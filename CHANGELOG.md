@@ -35,6 +35,7 @@ All notable changes in this fork are summarized here. Detailed implementation no
 - Modal layout is constrained to the viewport to avoid a page-level scrollbar.
 - Full raw metadata loads on demand from the preview panel instead of being sent with every gallery list item.
 - Repeat gallery refreshes use a lightweight persistent index and compressed responses.
+- Multi-select controls no longer reserve header space while inactive, while preserving grid scroll position when selection mode changes.
 
 ### Security
 
