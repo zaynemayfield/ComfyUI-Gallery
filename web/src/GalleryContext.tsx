@@ -214,14 +214,21 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (settingsLoaded && settingsState?.relativePath) {
+            let cancelled = false;
             setCurrentFolder("");
-            ComfyAppApi.startMonitoring(
-                settingsState.relativePath,
-                settingsState.disableLogs,
-                settingsState.usePollingObserver,
-                settingsState.scanExtensions // Pass extensions here
-            );
-            runAsync();
+            const syncGalleryRoot = async () => {
+                await ComfyAppApi.startMonitoring(
+                    settingsState.relativePath,
+                    settingsState.disableLogs,
+                    settingsState.usePollingObserver,
+                    settingsState.scanExtensions // Pass extensions here
+                );
+                if (!cancelled) await runAsync();
+            };
+            syncGalleryRoot();
+            return () => {
+                cancelled = true;
+            };
         }
     }, [settingsLoaded, settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver, JSON.stringify(settingsState?.scanExtensions)]);
 
